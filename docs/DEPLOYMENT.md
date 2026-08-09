@@ -16,22 +16,33 @@
 ## วิธีที่ 1: ติดตั้งด้วย Docker (แนะนำ)
 
 มี image พร้อมใช้บน **GitHub Packages (ghcr.io)** และ `docker-compose.yml` ใน repo:
+compose จะ start ทั้งหมดรวมกัน 3 service คือ ChatDesk + MariaDB + **n8n** (ในเครื่องเดียว):
 
 ```bash
-# 1. แก้ค่า env ใน docker-compose.yml (DB_PASS, ADMIN_PASS, N8N_PUSH_URL, ...)
-# 2. รัน (จะ build + สร้าง MariaDB + import schema.sql ให้อัตโนมัติ)
+# 1. คัดลอก .env.example → .env แล้วแก้รหัสผ่าน + N8N_ENCRYPTION_KEY (สำคัญ)
+#    cp .env.example .env
+# 2. สร้าง .env ตามคำแนะนำ (ดูตารางด้านล่าง)
+# 3. รัน (จะ pull/build image + สร้าง MariaDB + import schema.sql ให้อัตโนมัติ)
 docker compose up -d
 ```
 
-### ตัวแปร env ที่ตั้งได้
+เปิดใช้งาน:
+- ChatDesk: http://localhost:8080 (login ตาม `ADMIN_USER`/`ADMIN_PASS`)
+- n8n: http://localhost:5678 (user management ปิดอยู่ — เปิดเข้าได้เลย)
+
+> **หมายเหตุจัดวงจร**: `N8N_PUSH_URL` ชี้ไป `http://n8n:5678/webhook/chatdesk-push` (ภายใน docker network) — ไม่ต้องแก้
+> โครงข่ายงาน populate ให้อัตโนมัติแล้ว (ดูหัวข้อ "ตั้งค่า n8n" ด้านล่าง)
+
+### ตัวแปร env ที่ตั้งได้ (ไฟล์ `.env`)
 
 | ตัวแปร | ค่าเริ่มต้น | ความหมาย |
 |---|---|---|
 | `CD_ENV_CONFIG` | `1` | บังคับให้ config อ่านค่าจาก env แทน default |
 | `DB_HOST` | `db` | โฮสต์ฐานข้อมูล (ชี้ service `db`) |
 | `DB_NAME` / `DB_USER` / `DB_PASS` | — | ข้อมูลฐานข้อมูล |
-| `N8N_PUSH_URL` | — | URL webhook push ของ n8n |
-| `N8N_SECRET` | `''` | secret ที่ n8n ส่งมาด้วย |
+| `MARIADB_ROOT_PASSWORD` | — | root ของ MariaDB |
+| `N8N_PUSH_URL` | `http://n8n:5678/webhook/chatdesk-push` | URL webhook push ของ n8n (ใน network นี้ชี้แบบนี้) |
+| `N8N_SECRET` | `''` | secret ที่ n8n ส่งมาด้วย (ถ้าตั้ง ให้แก้เป็นค่าจริง) |
 | `ADMIN_USER` / `ADMIN_PASS` | `admin` / — | บัญชีผู้ดูแลหน้าเว็บ |
 | `APP_WEB_PATH` | `''` | path ที่ติดตั้ง (ติดตั้งที่ root เว้นว่าง) |
 | `APP_TITLE` / `APP_SUBTITLE` / `APP_TIMEZONE` | — | ข้อความ/เวลา |
@@ -39,8 +50,10 @@ docker compose up -d
 | `APP_MAX_LENGTH` | `2000` | ความยาวข้อความสูงสุด |
 | `APP_AUTO_MUTE_BOT` | `true` | ปิดบอทอัตโนมัติเมื่อพนักงานตอบ |
 | `APP_DEBUG` | `false` | โหมด debug |
+| `N8N_ENCRYPTION_KEY` | (ต้องตั้ง) | ใช้เข้ารหัส credentials ของ n8n — **ห้ามเปลี่ยนภายหลัง** |
 
-> **แนะนำ**: เปลี่ยน `DB_PASS` และ `ADMIN_PASS` ทุกครั้งก่อนลงใช้งานจริง
+> **แนะนำ**: เปลี่ยน `DB_PASS` — `ADMIN_PASS` — `MARIADB_ROOT_PASSWORD` — `N8N_ENCRYPTION_KEY` ทุกครั้งก่อนลงใช้งานจริง
+> สุ่ม key: `openssl rand -hex 32`
 
 ### ใช้ image โดยตรง (ไม่ใช้ compose)
 
@@ -131,7 +144,7 @@ chmod 755 uploads/
 
 ## 6. ตั้งค่า n8n (หลังติดตั้ง ChatDesk)
 
-ต้องมีสองเวิร์กโฟลใน n8n ของคุณ:
+ต้องมีสองเวิร์กโฟลใน n8n ของคุณ (อยู่ใน repo `n8n/*.workflow.json`):
 
 **A. เวิร์กโฟลรับข้อความจาก LINE (ChatDesk Manager — LINE)**
 - ใช้ Webhook trigger รับข้อความจาก LINE (เมื่อมีคนส่งข้อความหา bot)
@@ -144,6 +157,21 @@ chmod 755 uploads/
 - กรณีมีเดีย จะมี `mediaUrl`, `mediaPreviewUrl`, `stickerPackage`, `stickerId` เพิ่มตาม type
 
 LINE Messaging API credential (channel access token) เก็บอยู่ใน n8n Credentials — ไม่ต้องใส่ไว้ในโค้ด
+
+### 6.1 ตั้งค่าอัตโนมัติใน Docker (compose)
+
+เมื่อ compose start ขึ้น ภาษา `n8n` จะมี node LINE + workflow 2 ตัว import เข้าแล้ว แต่ยังต้องทำ 2 ขั้นผ่าน UI:
+
+1. เปิด http://localhost:5678
+2. ไป **Credentials** → สร้าง 3 ตัว แล้วผูกกับ node ตาม workflow:
+   - **Line Messaging API** (`lineMessagingApi`): ใส่ Channel Access Token + Channel Secret ของ LINE
+   - **HTTP Header Auth** (`httpHeaderAuth`): name = `Authorization`, value = `Bearer <access token>`
+   - **Google Gemini** (`googlePalmApi`): host = `https://generativelanguage.googleapis.com`, API key
+3. เปิด workflow ทั้ง 2 (toggle Active) — ตรวจจากหน้า `http://localhost:5678/home/workflows`
+4. ตั้ง Webhook URL ของ workflow LINE ที่ **LINE Developer Console** (ต้องเป็น public URL — ใช้ tunnel เช่น Cloudflare Tunnel/ngrok ถ้าอยู่หลัง NAT)
+
+> workflow ไฟล์ที่ import มี credential ref หาย (เพราะไม่ควร commit secret) ดังนั้นต้องผูก credential ใหม่ทุกครั้งที่ deploy ใหม่ ค่า URL ภายใน (เช่น `http://chatdesk/...`) ถูกตั้งไว้พร้อม
+> `n8n/push.php` ตรวจได้ว่า node ทั้งหมดมี credential ครบไหมดูในหน้า Individual workflow เป็นหลัก
 
 ## 7. Production Checklist
 

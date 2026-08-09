@@ -17,3 +17,4 @@ node_modules/
 # ไฟล์ชั่วคราว / ทดสอบ
 *.tmp
 schema-dump*.php
+

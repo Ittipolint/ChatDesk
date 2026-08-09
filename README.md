@@ -10,17 +10,22 @@
 ## สถาปัตยกรรมแบบย่อ
 
 ```
-LINE ── webhook ──▶ n8n ──▶ api/incoming.php ──▶ MySQL
-LINE ◀── push ──── n8n ◀── api/send.php ◀───── พนักงาน
+LINE ── webhook ──▶ n8n (docker) ──▶ api/incoming.php ──▶ MySQL
+LINE ◀── push ────── n8n (docker) ◀── api/send.php ◀───── พนักงาน
 ```
 
 ## เริ่มต้นใช้งาน
 
-**ติดตั้งแบบ Docker (แนะนำ)** — image on GitHub Packages:
+**ติดตั้งแบบ Docker (แนะนำ)** — 1 command ได้ ทั้ง ChatDesk + MariaDB + **n8n** ในเครื่องเดียว:
 
 ```bash
-docker compose up -d        # รวม MariaDB + schema.sql ให้อัตโนมัติ
+cp .env.example .env        # ตั้งรหัสผ่าน + N8N_ENCRYPTION_KEY (สำคัญ)
+docker compose up -d        # มาเรีย + schema.sql + n8n (พร้อม node LINE) อัตโนมัติ
 ```
+
+- ChatDesk: http://localhost:8080 (login ตาม `ADMIN_USER`/`ADMIN_PASS`)
+- n8n: http://localhost:5678
+- จัดการ credentials LINE/Gemini ใน n8n (ดู docs/DEPLOYMENT.md §6.1)
 
 **ติดตั้งแบบดั้งเดิม** (PHP + MySQL + Apache):
 
