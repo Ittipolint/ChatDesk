@@ -43,6 +43,8 @@ mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 | เอกสาร | รายละเอียด |
 |---|---|
 | [docs/SOFTWARE_SPEC.md](docs/SOFTWARE_SPEC.md) | Software Requirement Specification (SRS) ฉบับเต็ม |
+| [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md) | สถาปัตยกรรม V2.0.0 — Multi-channel (LINE + Facebook Messenger) |
+| [docs/MESSENGER_SETUP.md](docs/MESSENGER_SETUP.md) | ตั้งค่า Facebook Messenger เพื่อผูกกับ ChatDesk |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | คู่มือติดตั้งบน server ใหม่ |
 | [schema.sql](schema.sql) | โครงสร้างฐานข้อมูล |
 | [config.sample.php](config.sample.php) | ตัวอย่าง config |

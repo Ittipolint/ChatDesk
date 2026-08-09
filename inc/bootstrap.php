@@ -9,7 +9,7 @@ if (defined('CD_BOOTSTRAPPED')) {
 define('CD_BOOTSTRAPPED', true);
 
 define('CD_ROOT', dirname(__DIR__));
-define('CD_VERSION', '1.0.0');
+define('CD_VERSION', '2.0.0');
 
 $CFG = require CD_ROOT . '/config.php';
 
