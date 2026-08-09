@@ -1,0 +1,29 @@
+# sbu-webchat — ค่าเริ่มต้นสำหรับ Apache (DirectAdmin / cPanel / Plesk)
+
+Options -Indexes
+DirectoryIndex index.php index.html
+AddDefaultCharset UTF-8
+
+# ห้ามเปิดไฟล์ตั้งค่า / ไฟล์ระบบ ผ่าน browser
+<FilesMatch "^(config\.php|schema\.sql|README.*|\.env.*)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# cache ไฟล์ static
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

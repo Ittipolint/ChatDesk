@@ -1,0 +1,19 @@
+# ChatDesk — ไฟล์ที่จะไม่ commit ขึ้น repository
+# (ความลับสำหรับผู้ใช้จริง)
+
+# ค่าตั้งที่มีข้อมูลเฉพาะของ server (รหัสผ่าน, token ฯลฯ)
+config.php
+
+# ไฟล์มีเดียที่ผู้ใช้อัปโหลดจริง
+uploads/*
+!uploads/.htaccess
+
+# OS / เครื่องมือ
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+
+# ไฟล์ชั่วคราว / ทดสอบ
+*.tmp
+schema-dump*.php

@@ -1,0 +1,14 @@
+# ChatDesk — ไฟล์มีเดียที่อัปโหลด
+# อนุญาตให้เข้าถึงไฟล์ได้ แต่ห้ามรัน PHP
+Options -Indexes
+AddDefaultCharset UTF-8
+
+<FilesMatch "\.(php|php5|phtml|phar|pl|py|cgi|asp|aspx|sh)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
