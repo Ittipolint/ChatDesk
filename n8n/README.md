@@ -20,7 +20,7 @@
 - `CHATDESK_UPLOAD_URL` -> URL ที่ `api/upload.php`
 - `CHATDESK_SECRET` -> ใส่ค่าให้ตรงกับ `n8n.secret` ใน config (ถ้าตั้งไว้)
 
-> เมื่อใช้ **Docker compose** ค่า URL เหล่านี้ถูกตั้งไว้เป็น `http://chatdesk/api/...` (ภายใน docker network) แล้ว — ใช้ไฟล์ `docker-chatdesk-manager-*.workflow.json` แทน
+> สำหรับ version **Docker compose** ให้ใช้ branch `docker` — ค่า URL ตั้งเป็น `http://chatdesk/api/...` (ภายใน docker network) และใช้ไฟล์ `docker-chatdesk-manager-*.workflow.json`
 
 **ChatDesk Manager — Push**
 - webhook path `chatdesk-push` ต้องตรงกับ `N8N_PUSH_URL` / `n8n.push_url`
@@ -36,7 +36,7 @@
 
 ## ข้อกำหนด
 
-- ต้องติดตั้ง community node `@aotoki/n8n-nodes-line-messaging` — ใน Docker compose ติดตั้งไว้แล้วใน image (`docker/n8n/Dockerfile`) ถ้า n8n เดิมต้องติดตั้งเอง
+- ต้องติดตั้ง community node `@aotoki/n8n-nodes-line-messaging` — ใน version Docker ติดตั้งไว้แล้วใน image (`docker/n8n/Dockerfile`) ถ้า n8n เดิมต้องติดตั้งเอง
 - โนด AI Agent ใช้ Google Gemini (ต้องมี API key ใน n8n credentials)
 
 ดูรายละเอียดการตั้งค่าเต็มใน docs/DEPLOYMENT.md

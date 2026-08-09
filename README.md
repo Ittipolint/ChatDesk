@@ -7,27 +7,18 @@
 - **มีเดีย**: ส่งภาพ / วิดีโอ / สติกเกอร์
 - **จัดการ**: เปิด/ปิดบอทต่อห้อง, ปิด/เปิดเคส, ลบห้อง, ลบข้อความ (soft delete), ค้นหา, ฟิลเตอร์
 
+> **หมายเหตุ**: branch หลัก `main` นี้คือ **version สำหรับติดตั้งบนเครื่องทั่วไป (Apache + PHP + MySQL)** ที่โฮสต์บนอินเทอร์เน็ต — สำหรับ version Docker (docker compose พร้อม n8n ในตัว) ให้ใช้ branch [`docker`](https://github.com/Ittipolint/ChatDesk/tree/docker)
+
 ## สถาปัตยกรรมแบบย่อ
 
 ```
-LINE ── webhook ──▶ n8n (docker) ──▶ api/incoming.php ──▶ MySQL
-LINE ◀── push ────── n8n (docker) ◀── api/send.php ◀───── พนักงาน
+LINE ── webhook ──▶ n8n ──▶ api/incoming.php ──▶ MySQL
+LINE ◀── push ──── n8n ◀── api/send.php ◀───── พนักงาน
 ```
 
 ## เริ่มต้นใช้งาน
 
-**ติดตั้งแบบ Docker (แนะนำ)** — 1 command ได้ ทั้ง ChatDesk + MariaDB + **n8n** ในเครื่องเดียว:
-
-```bash
-cp .env.example .env        # ตั้งรหัสผ่าน + N8N_ENCRYPTION_KEY (สำคัญ)
-docker compose up -d        # มาเรีย + schema.sql + n8n (พร้อม node LINE) อัตโนมัติ
-```
-
-- ChatDesk: http://localhost:8080 (login ตาม `ADMIN_USER`/`ADMIN_PASS`)
-- n8n: http://localhost:5678
-- จัดการ credentials LINE/Gemini ใน n8n (ดู docs/DEPLOYMENT.md §6.1)
-
-**ติดตั้งแบบดั้งเดิม** (PHP + MySQL + Apache):
+ติดตั้งแบบดั้งเดิม (PHP + MySQL + Apache) — เหมาะสำหรับ web hosting:
 
 ```bash
 git clone https://github.com/Ittipolint/ChatDesk.git chatdesk
@@ -49,11 +40,9 @@ mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 
 ## ข้อกำหนดระบบ
 
-- Docker (Compose v2) **หรือ**
-- PHP 7.4+ (พร้อม `pdo_mysql`, `curl`, `fileinfo`, `mbstring`) + MySQL 5.7+ / MariaDB 10.2+ + Apache
+- PHP 7.4+ (พร้อม `pdo_mysql`, `curl`, `fileinfo`, `mbstring`)
+- MySQL 5.7+ / MariaDB 10.2+
 - n8n + LINE Messaging API (ดู docs/DEPLOYMENT.md)
-
-**Docker image**: `ghcr.io/ittipolint/chatdesk:latest` — ใช้ `docker compose up -d` เพื่อตั้งค่า MariaDB + import schema อัตโนมัติ (ดู [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 
 ## หมายเหตุสำคัญ
 
