@@ -64,6 +64,10 @@ return array(
         'subtitle'     => cd_env('APP_SUBTITLE', 'กล่องข้อความ LINE'),
         'timezone'     => cd_env('APP_TIMEZONE', 'Asia/Bangkok'),
 
+        // path ที่ติดตั้ง app เทียบกับ root ของเว็บ (เช่น '/week7/chatdesk')
+        // ติดตั้งไว้ที่ root ตรง ๆ ให้เว้นว่าง
+        'web_path'=> cd_env('APP_WEB_PATH', ''),
+
         // ทุกกี่วินาทีให้หน้าจอไปเช็คข้อความใหม่
         'poll_inbox'   => cd_env('APP_POLL_INBOX', 5),
         'poll_thread'  => cd_env('APP_POLL_THREAD', 3),

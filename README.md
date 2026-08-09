@@ -16,6 +16,14 @@ LINE ◀── push ──── n8n ◀── api/send.php ◀───── �
 
 ## เริ่มต้นใช้งาน
 
+**ติดตั้งแบบ Docker (แนะนำ)** — image on GitHub Packages:
+
+```bash
+docker compose up -d        # รวม MariaDB + schema.sql ให้อัตโนมัติ
+```
+
+**ติดตั้งแบบดั้งเดิม** (PHP + MySQL + Apache):
+
 ```bash
 git clone https://github.com/Ittipolint/ChatDesk.git chatdesk
 cd chatdesk
@@ -23,7 +31,7 @@ cp config.sample.php config.php        # ตั้งค่า db / n8n / admin
 mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 ```
 
-อัปโหลดทั้งชุดขึ้น server (PHP + MySQL + Apache) แล้วเข้าสู่ระบบ — ดูรายละเอียดใน **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+อัปโหลดทั้งชุดขึ้น server แล้วเข้าสู่ระบบ — ดูรายละเอียดใน **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
 
 ## เอกสาร
 
@@ -36,9 +44,11 @@ mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 
 ## ข้อกำหนดระบบ
 
-- PHP 7.4+ (พร้อม `pdo_mysql`, `curl`, `fileinfo`, `mbstring`)
-- MySQL 5.7+ / MariaDB 10.2+
+- Docker (Compose v2) **หรือ**
+- PHP 7.4+ (พร้อม `pdo_mysql`, `curl`, `fileinfo`, `mbstring`) + MySQL 5.7+ / MariaDB 10.2+ + Apache
 - n8n + LINE Messaging API (ดู docs/DEPLOYMENT.md)
+
+**Docker image**: `ghcr.io/ittipolint/chatdesk:latest` — ใช้ `docker compose up -d` เพื่อตั้งค่า MariaDB + import schema อัตโนมัติ (ดู [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 
 ## หมายเหตุสำคัญ
 

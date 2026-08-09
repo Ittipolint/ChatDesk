@@ -1,0 +1,20 @@
+# .git
+.git
+.gitignore
+Credential
+
+# Docs ไม่จำเป็นใน image
+docs
+*.md
+
+# config ที่มี secret ส่วนตัว
+config.php
+
+# Docker metadata
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ซอร์สชั่วคราว
+*.log
+*.tmp

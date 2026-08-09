@@ -1,6 +1,6 @@
 # ChatDesk — คู่มือติดตั้งบน Server ใหม่ (Deployment)
 
-เอกสารนี้สำหรับติดตั้ง ChatDesk บน server ตัวใหม่ (Apache + PHP + MySQL)
+เอกสารนี้สำหรับติดตั้ง ChatDesk บน server ตัวใหม่ มี 2 วิธี: **Docker** (แนะนำ) หรือ **Apache + PHP + MySQL**
 
 ## ข้อกำหนดเบื้องต้น
 
@@ -11,7 +11,50 @@
 | เว็บเซิร์ฟเวอร์ | Apache (รองรับ `.htaccess`) หรือ nginx (ตั้ง rule เทียบเท่า) |
 | ระบบอัตโนมัติ | n8n ที่ต่อกับ LINE Messaging API (ใช้ส่ง/รับข้อความ LINE) |
 
-## ขั้นตอนติดตั้ง
+หรือใช้ **Docker** ไม่ต้องติดตั้ง PHP/MySQL เอง (ดูหัวข้อถัดไป)
+
+## วิธีที่ 1: ติดตั้งด้วย Docker (แนะนำ)
+
+มี image พร้อมใช้บน **GitHub Packages (ghcr.io)** และ `docker-compose.yml` ใน repo:
+
+```bash
+# 1. แก้ค่า env ใน docker-compose.yml (DB_PASS, ADMIN_PASS, N8N_PUSH_URL, ...)
+# 2. รัน (จะ build + สร้าง MariaDB + import schema.sql ให้อัตโนมัติ)
+docker compose up -d
+```
+
+### ตัวแปร env ที่ตั้งได้
+
+| ตัวแปร | ค่าเริ่มต้น | ความหมาย |
+|---|---|---|
+| `CD_ENV_CONFIG` | `1` | บังคับให้ config อ่านค่าจาก env แทน default |
+| `DB_HOST` | `db` | โฮสต์ฐานข้อมูล (ชี้ service `db`) |
+| `DB_NAME` / `DB_USER` / `DB_PASS` | — | ข้อมูลฐานข้อมูล |
+| `N8N_PUSH_URL` | — | URL webhook push ของ n8n |
+| `N8N_SECRET` | `''` | secret ที่ n8n ส่งมาด้วย |
+| `ADMIN_USER` / `ADMIN_PASS` | `admin` / — | บัญชีผู้ดูแลหน้าเว็บ |
+| `APP_WEB_PATH` | `''` | path ที่ติดตั้ง (ติดตั้งที่ root เว้นว่าง) |
+| `APP_TITLE` / `APP_SUBTITLE` / `APP_TIMEZONE` | — | ข้อความ/เวลา |
+| `APP_POLL_INBOX` / `APP_POLL_THREAD` | `5` / `3` | ความถี่ poll (วินาที) |
+| `APP_MAX_LENGTH` | `2000` | ความยาวข้อความสูงสุด |
+| `APP_AUTO_MUTE_BOT` | `true` | ปิดบอทอัตโนมัติเมื่อพนักงานตอบ |
+| `APP_DEBUG` | `false` | โหมด debug |
+
+> **แนะนำ**: เปลี่ยน `DB_PASS` และ `ADMIN_PASS` ทุกครั้งก่อนลงใช้งานจริง
+
+### ใช้ image โดยตรง (ไม่ใช้ compose)
+
+```bash
+docker pull ghcr.io/ittipolint/chatdesk:latest
+docker run -d -p 8080:80 \
+  -e CD_ENV_CONFIG=1 -e DB_HOST=db -e DB_NAME=chatdesk \
+  -e DB_USER=chatdesk -e DB_PASS=xxx -e ADMIN_PASS=xxx \
+  ghcr.io/ittipolint/chatdesk:latest
+```
+
+หมายเหตุ: ต้องมีฐานข้อมูลที่ container เข้าถึงได้ (ชี้ hostname ของ MySQL ผ่าน `DB_HOST`)
+
+## วิธีที่ 2: ติดตั้งแบบดั้งเดิม (Apache + PHP + MySQL)
 
 ### 1. ดาวน์โหลดซอร์สโค้ด
 
@@ -20,7 +63,7 @@ git clone https://github.com/Ittipolint/ChatDesk.git chatdesk
 cd chatdesk
 ```
 
-หรือดาวน์โหลดเป็น ZIP แล้วแตกไฟล์
+หรือดาวน์โหลด ZIP จาก GitHub Release แล้วแตกไฟล์
 
 ### 2. สร้างฐานข้อมูล
 
@@ -45,8 +88,9 @@ cp config.sample.php config.php
 | `db.host` | `localhost` | โฮสต์ฐานข้อมูล |
 | `db.name` | `chatdesk` | ชื่อฐานข้อมูล |
 | `db.user` / `db.pass` | `chatdesk` / `password` | ผู้ใช้ / รหัสผ่านฐานข้อมูล |
+| `app.web_path` | `''` | path ที่ติดตั้ง เช่น `/week7/chatdesk` หรือเว้นว่างถ้าอยู่ root |
 | `n8n.push_url` | `https://n8n.example.com/webhook/chatdesk-push` | URL webhook ของ n8n ที่ใช้ push ไป LINE |
-| `n8n.secret` | `secret123` | รหัสลับ (กำหนดเองแล้วเอาไปใส่ใน n8n ด้วย) |
+| `n8n.secret` | `secret123` | รหัสลับ (กำหนดเอง แล้วเอาไปใส่ใน n8n ด้วย) |
 | `admin.user` / `admin.pass` | `admin` / `strong-password` | บัญชีผู้ดูแลหน้าเว็บ |
 | `app.poll_inbox` / `app.poll_thread` | `5` / `3` | ความถี่ poll (วินาที) |
 | `debug` | `false` | เปิดเฉพาะตอน troubleshoot |
@@ -55,7 +99,7 @@ cp config.sample.php config.php
 
 ### 4. อัปโหลดไฟล์ขึ้น server
 
-อัปโหลดทั้งชุดไปยังโฟลเดอร์ root ของเว็บของคุณ โดยคงโครงสร้างเดิม:
+อัปโหลดทั้งชุดไปยังโฟลเดอร์ root ของเว็บ โดยคงโครงสร้างเดิม:
 
 ```
 index.php
@@ -92,7 +136,7 @@ chmod 755 uploads/
 **A. เวิร์กโฟลรับข้อความจาก LINE (ChatDesk Manager — LINE)**
 - ใช้ Webhook trigger รับข้อความจาก LINE (เมื่อมีคนส่งข้อความหา bot)
 - หลังรับแล้ว POST ไป `https://your-domain/chatdesk/api/incoming.php`
-- ใส่ secret ใน header `X-ChatDesk-Secret` (หรือฟิลด์ `secret` ใน body) ถ้าตั้งค่าของ `n8n.secret`
+- ใส่ secret ใน header `X-ChatDesk-Secret` (หรือฟิลด์ `secret` ใน body) ถ้าตั้งค่า `n8n.secret`
 
 **B. เวิร์กโฟล Push (ChatDesk Manager — Push)**
 - ใช้ Webhook รับ POST ที่ URL ตรงกับ `n8n.push_url` ที่ตั้งไว้ใน config
@@ -106,19 +150,19 @@ LINE Messaging API credential (channel access token) เก็บอยู่ใ
 - [ ] รหัสผ่าน admin เปลี่ยนแล้ว
 - [ ] `n8n.secret` ตั้งไว้และให้ n8n ส่งด้วยทุกครั้ง
 - [ ] HTTPS บังคับใช้ (session cookie จะ Secure อัตโนมัติ)
-- [ ] `uploads/` ทำการเขียนได้ และมี `.htaccess` ป้อง PHP
-- [ ] ทดสอบสร้างข้อความจาก LINE จริงแล้วเห็น ห้องแชทฝั่งเว็บ
+- [ ] `uploads/` เขียนได้ และมี `.htaccess` ป้องกัน PHP
+- [ ] ทดสอบส่งข้อความจาก LINE จริง แล้วเห็นห้องแชทฝั่งเว็บ
 
 ## Troubleshooting
 
 | อาการ | สาเหตุ / วิธีแก้ |
 |---|---|
-| หน้า login "ตั้งค่าไม่ถูกต้อง" | ค่า DB/จำนวนผิด หรือยังไม่ได้ import schema.sql |
+| หน้า login "ตั้งค่าไม่ถูกต้อง" | ค่า DB ผิด หรือยังไม่ได้ import schema.sql |
 | POST api 403 | CSRF หมด — รีเฟรชหน้าแล้วลองใหม่ |
-| ปุ่มตอบ "ส่งไม่สำเร็จ" | ตรวจ `n8n.push_url` / เครดาน n8n กับ LINE |
+| ปุ่มตอบ "ส่งไม่สำเร็จ" | ตรวจ `n8n.push_url` / credential n8n กับ LINE |
 | ข้อความลูกค้าไม่เข้า | ตรวจ incoming URL กับ secret กับ n8n |
 | อัปโหลดไม่ได้ "เขียนไม่ได้" | chmod uploads |
-| หน้าไอ แจ้ง "456" | ลองรีเซ็น / เติม text ใหม่ |
+| หน้าแจ้ง HTTP 500 | ตรวจ error log / เปิด `debug=true` |
 
 ## Backup / Restore
 

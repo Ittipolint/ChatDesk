@@ -134,7 +134,8 @@ if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strpos($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') === 0)) {
     $scheme = 'https';
 }
-$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/week7/chatdesk/uploads/' . $newname;
+$webPath = isset($CFG['app']['web_path']) ? rtrim((string) $CFG['app']['web_path'], '/') : '';
+$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $webPath . '/uploads/' . $newname;
 
 cd_json(array(
     'ok'   => true,

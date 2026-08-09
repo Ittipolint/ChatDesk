@@ -1,0 +1,53 @@
+services:
+  chatdesk:
+    image: ghcr.io/ittipolint/chatdesk:latest
+    build: .
+    container_name: chatdesk
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      # เปิดโหมดอ่านค่าจาก env (config.sample.php จะใช้ env แทน default)
+      CD_ENV_CONFIG: "1"
+      DB_HOST: "db"
+      DB_PORT: "3306"
+      DB_NAME: "chatdesk"
+      DB_USER: "chatdesk"
+      DB_PASS: "changeme"
+      N8N_PUSH_URL: "https://your-n8n-host/webhook/chatdesk-push"
+      N8N_SECRET: ""
+      ADMIN_USER: "admin"
+      ADMIN_PASS: "changeme"
+      APP_TITLE: "ChatDesk"
+      APP_SUBTITLE: "กล่องข้อความ LINE"
+      APP_TIMEZONE: "Asia/Bangkok"
+      APP_WEB_PATH: ""
+      APP_POLL_INBOX: "5"
+      APP_POLL_THREAD: "3"
+      APP_MAX_LENGTH: "2000"
+      APP_AUTO_MUTE_BOT: "true"
+      APP_DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11
+    container_name: chatdesk-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: "rootpass"
+      MARIADB_DATABASE: "chatdesk"
+      MARIADB_USER: "chatdesk"
+      MARIADB_PASSWORD: "changeme"
+    volumes:
+      - chatdesk-db-data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  chatdesk-db-data: {}
