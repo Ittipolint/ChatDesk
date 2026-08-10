@@ -1,5 +1,4 @@
 # ChatDesk 💬
-
 *************************************************************************************
 การเข้าใช้งาน (กลุ่มริมหน้าต่าง)
 1. สำหรับ User LINEOA
@@ -11,7 +10,16 @@
    URL: https://ittipolint-sbu.veya.co.th/week7/chatdesk/index.php
    User id: admin, password: 10203040
 *************************************************************************************
+ภาพรวมของระบบ
+https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/967b3947-85ab-4b30-b898-f410c3bec8a1?utm_source=nlm_web_share&utm_medium=google_oo&utm_campaign=art_share_1&utm_content=&utm_smc=nlm_web_share_google_oo_art_share_1_
 
+อธิบายระบบ
+https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/5510fa53-f3d3-4e3c-a77e-deffff0fe111?utm_source=nlm_web_share&utm_medium=google_oo&utm_campaign=art_share_1&utm_content=&utm_smc=nlm_web_share_google_oo_art_share_1_
+
+สถาปัตยกรรมของระบบ
+https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/4f135130-f848-4b86-934c-e1253ab0a996?utm_source=nlm_web_share&utm_medium=google_oo&utm_campaign=art_share_1&utm_content=&utm_smc=nlm_web_share_google_oo_art_share_1_
+
+*************************************************************************************
 กล่องข้อความ LINE สำหรับทีมดูแลลูกค้า — ดูบทสนทนาระหว่างบอท LINE กับลูกค้า และตอบกลับลูกค้าได้จากหน้าเว็บเดียว
 
 - **ดูบทสนทนา**: รับข้อความลูกค้า/บอทผ่าน n8n → เก็บใน MySQL → แสดงแบบเรียลไทม์ (poll)
@@ -28,7 +36,7 @@ LINE ── webhook ──▶ n8n ──▶ api/incoming.php ──▶ MySQL
 LINE ◀── push ──── n8n ◀── api/send.php ◀───── พนักงาน
 ```
 
-## เริ่มต้นใช้งาน
+## เริ่มต้นติดตั้งใช้งาน
 
 ติดตั้งแบบดั้งเดิม (PHP + MySQL + Apache) — เหมาะสำหรับ web hosting:
 
