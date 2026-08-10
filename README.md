@@ -20,7 +20,7 @@ https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifa
 https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/4f135130-f848-4b86-934c-e1253ab0a996
 
 สถาปัตยกรรมของระบบ
-https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/5510fa53-f3d3-4e3c-a77e-deffff0fe111
+(https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/f0736421-bc91-4970-8a96-93c1e6b476f5)
 
 *************************************************************************************
 กล่องข้อความ LINE สำหรับทีมดูแลลูกค้า — ดูบทสนทนาระหว่างบอท LINE กับลูกค้า และตอบกลับลูกค้าได้จากหน้าเว็บเดียว
