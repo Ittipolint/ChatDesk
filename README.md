@@ -1,3 +1,14 @@
+*************************************************************************************
+การเข้าใช้งาน (กลุ่มริมหน้าต่าง)
+1. สำหรับ User LINEOA
+   Scan QR Code เป็นเพื่อกับ LINEOA ChatDesk เพื่อคุยกับ Bot หรือคน (ตามที่ระบบหลังบ้านกำหนด)
+   <img width="1254" height="1254" alt="ChatDesk QR" src="https://github.com/user-attachments/assets/60cb2aa2-88ae-4520-8621-406e4a4d360f" />
+
+3. สำหรับ Admin
+   URL: https://ittipolint-sbu.veya.co.th/week7/chatdesk/index.php
+   User id: admin, password: 10203040
+*************************************************************************************
+
 # ChatDesk 💬
 
 กล่องข้อความ LINE สำหรับทีมดูแลลูกค้า — ดูบทสนทนาระหว่างบอท LINE กับลูกค้า และตอบกลับลูกค้าได้จากหน้าเว็บเดียว
@@ -50,4 +61,4 @@ mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 
 ## License
 
-© 2026 Ittipolint — สงวนสิทธิ์ทุกประการ
+© 2026 Ittipolint — ไม่สงวนสิทธิ์ทุกประการ
