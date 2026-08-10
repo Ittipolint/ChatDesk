@@ -2,7 +2,7 @@
 การเข้าใช้งาน (กลุ่มริมหน้าต่าง)
 1. สำหรับ User LINEOA
    Scan QR Code เป็นเพื่อกับ LINEOA ChatDesk เพื่อคุยกับ Bot หรือคน (ตามที่ระบบหลังบ้านกำหนด)
-   <img width="500" height="500" alt="ChatDesk QR" src="https://github.com/user-attachments/assets/60cb2aa2-88ae-4520-8621-406e4a4d360f" />
+   <img width="100" height="100" alt="ChatDesk QR" src="https://github.com/user-attachments/assets/60cb2aa2-88ae-4520-8621-406e4a4d360f" />
 
 3. สำหรับ Admin
    URL: https://ittipolint-sbu.veya.co.th/week7/chatdesk/index.php
