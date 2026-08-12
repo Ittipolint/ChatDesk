@@ -11,7 +11,7 @@
 | PHP | 7.4+ (แนะนำ 8.x) พร้อม extension: `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json` |
 | ฐานข้อมูล | MySQL 5.7+ หรือ MariaDB 10.2+ (utf8mb4) |
 | เว็บเซิร์ฟเวอร์ | Apache (รองรับ `.htaccess`) หรือ nginx (ตั้ง rule เทียบเท่า) |
-| ระบบอัตโนมัติ | n8n ที่ต่อกับ LINE Messaging API (ใช้ส่ง/รับข้อความ LINE) |
+| ระบบอัตโนมัติ | n8n ที่ต่อกับ LINE Messaging API และ/หรือ Facebook Messenger Graph API |
 
 ## ขั้นตอนติดตั้ง
 
@@ -48,6 +48,7 @@ cp config.sample.php config.php
 | `db.name` | `chatdesk` | ชื่อฐานข้อมูล |
 | `db.user` / `db.pass` | `chatdesk` / `password` | ผู้ใช้ / รหัสผ่านฐานข้อมูล |
 | `n8n.push_url` | `https://n8n.example.com/webhook/chatdesk-push` | URL webhook ของ n8n ที่ใช้ push ไป LINE |
+| `n8n.push_fb_url` | `https://n8n.example.com/webhook/chatdesk-push-fb` | URL webhook ของ n8n ที่ใช้ push ไป Facebook Messenger (เฉพาะเมื่อใช้ช่องทาง FB) |
 | `n8n.secret` | `secret123` | รหัสลับ (กำหนดเองแล้วเอาไปใส่ใน n8n ด้วย) |
 | `admin.user` / `admin.pass` | `admin` / `strong-password` | บัญชีผู้ดูแลหน้าเว็บ |
 | `app.poll_inbox` / `app.poll_thread` | `5` / `3` | ความถี่ poll (วินาที) |
@@ -89,6 +90,8 @@ chmod 755 uploads/
 
 ## 6. ตั้งค่า n8n (หลังติดตั้ง ChatDesk)
 
+### 6A. ช่องทาง LINE
+
 ต้องมีสองเวิร์กโฟลใน n8n ของคุณ:
 
 **A. เวิร์กโฟลรับข้อความจาก LINE (ChatDesk Manager — LINE)**
@@ -103,6 +106,23 @@ chmod 755 uploads/
 
 LINE Messaging API credential (channel access token) เก็บอยู่ใน n8n Credentials — ไม่ต้องใส่ไว้ในโค้ด
 
+### 6B. ช่องทาง Facebook Messenger (ทางเลือก)
+
+เพิ่มสองเวิร์กโฟล: **ChatDesk Manager — FB** และ **ChatDesk Manager — Push FB** (import จาก `n8n/chatdesk-manager-fb.workflow.json` และ `n8n/chatdesk-manager-push-fb.workflow.json`)
+
+**A. ChatDesk Manager — FB** — node `Set Config` ต้องแก้ `CHATDESK_URL` ให้ชี้ไป `api/incoming.php` ของคุณ
+
+**B. ChatDesk Manager — Push FB** — webhook path ต้องตรงกับ `n8n.push_fb_url`
+
+**ตั้งค่าใน Facebook Developer:**
+1. สร้าง/เปิด App → เพิ่ม product **Messenger**
+2. ใส่ Callback URL = `https://<n8n-host>/webhook/<path ของ node Webhook ในเวิร์กโฟล FB>` และ Verify Token (เช่น `DTR1234`) — เวิร์กโฟลตอบ `hub.challenge` ให้อัตโนมัติ
+3. รับ Page Access Token แบบระยะยาว (`EAAG...`) พร้อมสิทธิ์ `pages_messaging`, `pages_read_engagement`, `pages_manage_metadata`
+4. นำ token ไปใส่ใน credential `httpHeaderAuth` ของ n8n (name = `Authorization`, value = `Bearer <token>`)
+5. Subscribe ที่ Page
+
+ทั้ง LINE และ FB ใช้ฐานข้อมูลเดียวกับระบบเดิม — ตาราง `cd_conversations` มีคอลัมน์ `channel` เป็นตัวแยก (`line` / `fb`)
+
 ## 7. Production Checklist
 
 - [ ] รหัสผ่าน admin เปลี่ยนแล้ว
@@ -110,6 +130,7 @@ LINE Messaging API credential (channel access token) เก็บอยู่ใ
 - [ ] HTTPS บังคับใช้ (session cookie จะ Secure อัตโนมัติ)
 - [ ] `uploads/` ทำการเขียนได้ และมี `.htaccess` ป้อง PHP
 - [ ] ควรสร้างข้อความจาก LINE จริงแล้วเห็นห้องแชทฝั่งเว็บ
+- [ ] (ถ้าใช้ FB) ทดสอบ verify token ผ่าน URL `…/webhook/<path>?hub.mode=subscribe&hub.verify_token=…&hub.challenge=…`
 
 ## Troubleshooting
 
@@ -117,7 +138,9 @@ LINE Messaging API credential (channel access token) เก็บอยู่ใ
 |---|---|
 | หน้า login "ตั้งค่าไม่ถูกต้อง" | ค่า DB/จำนวนผิด หรือยังไม่ได้ import schema.sql |
 | POST api 403 | CSRF หมดพลัง — รีเฟรชหน้าแล้วลองใหม่ |
-| ปุ่มตอบ "ส่งไม่สำเร็จ" | ตรวจ `n8n.push_url` / เครดาน n8n กับ LINE |
+| ปุ่มตอบ "ส่งไม่สำเร็จ" | ตรวจ `n8n.push_url` (LINE) / `n8n.push_fb_url` (FB) — และ credential ใน n8n |
+| ข้อความ FB ไม่เข้า | ตรวจ Callback URL / Verify Token ไม่ตรงกับ path + cred ใน node Webhook เวิร์กโฟล FB และ Page subscription |
+| verify token ขึ้น error | เวิร์กโฟล FB ต้องตอน Active แล้ว และ node Webhook ต้องเปิด method GET |
 | ข้อความลูกค้าไม่เข้า | ตรวจ incoming URL กับ secret กับ n8n |
 | ลงโหลดไม่ได้ "เขียนไม่ได้" | chmod uploads |
 | หน้า error "456" | ลองรีเซ็น / เติม text ใหม่ |

@@ -23,11 +23,11 @@
 (https://notebook.google.com/notebook/45364e58-6a0d-49c1-ad3f-8b0dd2d70d3a/artifact/f0736421-bc91-4970-8a96-93c1e6b476f5)
 
 *************************************************************************************
-กล่องข้อความ LINE สำหรับทีมดูแลลูกค้า — ดูบทสนทนาระหว่างบอท LINE กับลูกค้า และตอบกลับลูกค้าได้จากหน้าเว็บเดียว
+กล่องข้อความ LINE & Facebook Messenger สำหรับทีมดูแลลูกค้า — ดูบทสนทนาระหว่างบอทกับลูกค้า และตอบกลับลูกค้าได้จากหน้าเว็บเดียว
 
 - **ดูบทสนทนา**: รับข้อความลูกค้า/บอทผ่าน n8n → เก็บใน MySQL → แสดงแบบเรียลไทม์ (poll)
-- **ตอบกลับ**: พนักงานพิมพ์ตอบ → ส่งออก LINE จริง ผ่าน LINE Push API (ผ่าน n8n)
-- **มีเดีย**: ส่งภาพ / วิดีโอ / สติกเกอร์
+- **ตอบกลับ**: พนักงานพิมพ์ตอบ → ส่งออก LINE / Facebook Messenger จริง (ผ่าน n8n)
+- **มีเดีย**: ส่งภาพ / วิดีโอ / สติกเกอร์ (LINE)
 - **จัดการ**: เปิด/ปิดบอทต่อห้อง, ปิด/เปิดเคส, ลบห้อง, ลบข้อความ (soft delete), ค้นหา, ฟิลเตอร์
 
 > **หมายเหตุ**: branch หลัก `main` นี้คือ **version สำหรับติดตั้งบนเครื่องทั่วไป (Apache + PHP + MySQL)** ที่โฮสต์บนอินเทอร์เน็ต — สำหรับ version Docker (docker compose พร้อม n8n ในตัว) ให้ใช้ branch [`docker`](https://github.com/Ittipolint/ChatDesk/tree/docker)
@@ -37,6 +37,8 @@
 ```
 LINE ── webhook ──▶ n8n ──▶ api/incoming.php ──▶ MySQL
 LINE ◀── push ──── n8n ◀── api/send.php ◀───── พนักงาน
+FB  ── webhook ──▶ n8n ──▶ api/incoming.php ──▶ MySQL
+FB  ◀── push ──── n8n ◀── api/send.php ◀───── พนักงาน
 ```
 
 ## เริ่มต้นติดตั้งใช้งาน
@@ -65,11 +67,12 @@ mysql -u USER -p chatdesk < schema.sql # สร้างตาราง
 
 - PHP 7.4+ (พร้อม `pdo_mysql`, `curl`, `fileinfo`, `mbstring`)
 - MySQL 5.7+ / MariaDB 10.2+
-- n8n + LINE Messaging API (ดู docs/DEPLOYMENT.md)
+- n8n + LINE Messaging API / Facebook Messenger (Graph API) (ดู docs/DEPLOYMENT.md)
 
 ## หมายเหตุสำคัญ
 
 - LINE Messaging API **ไม่มี** read receipt สำหรับข้อความที่บอทส่งออก → สถานะ "อ่านแล้ว" หมายถึงพนักงานเปิดดูในหน้าจอ ChatDesk เท่านั้น และ **ไม่มี** API ลบข้อความที่ส่งไปแล้ว — การลบข้อความเป็น soft delete ในระบบเท่านั้น
+- Facebook Messenger: รับ media เป็น URL ได้โดยตรง (ไม่ต้องดาวน์โหลดซ้ำ), ไม่มี sticker API แบบ LINE — ปุ่มสติกเกอร์จะซ่อนในห้องช่องทาง `fb`, แชร์ DB เดียวกับ LINE โดย `channel` เป็นตัวแยกห้อง (unique ร่วมกับ `external_user_id`)
 
 ## License
 

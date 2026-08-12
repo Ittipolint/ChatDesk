@@ -49,6 +49,11 @@ return array(
         // URL ของ webhook ที่ใช้ "ส่งข้อความออกไปหาลูกค้าทาง LINE"
         // (workflow: ChatDesk Manager — Push) — ใส่ URL จริงของคุณ
         'push_url' => cd_env('N8N_PUSH_URL', 'https://your-n8n-host/webhook/chatdesk-push'),
+
+        // URL ของ webhook ที่ใช้ "ส่งข้อความออกไปหาลูกค้าทาง Facebook Messenger"
+        // (workflow: ChatDesk Manager — Push FB) — ใส่ URL จริงของคุณ
+        'push_fb_url' => cd_env('N8N_PUSH_FB_URL', 'https://your-n8n-host/webhook/chatdesk-push-fb'),
+
         'timeout'  => cd_env('N8N_TIMEOUT', 30),
 
         // รหัสลับที่ n8n ต้องส่งมาด้วยตอนยิงเข้า api/incoming.php
@@ -61,7 +66,7 @@ return array(
      * ------------------------------------------------------------------- */
     'app' => array(
         'title'        => cd_env('APP_TITLE', 'ChatDesk'),
-        'subtitle'     => cd_env('APP_SUBTITLE', 'กล่องข้อความ LINE'),
+        'subtitle'     => cd_env('APP_SUBTITLE', 'กล่องข้อความ LINE & Facebook Messenger'),
         'timezone'     => cd_env('APP_TIMEZONE', 'Asia/Bangkok'),
 
         // path ที่ติดตั้ง app เทียบกับ root ของเว็บ (เช่น '/week7/chatdesk')

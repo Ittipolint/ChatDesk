@@ -1,0 +1,305 @@
+﻿{
+    "updatedAt":  "2026-08-12T10:06:23.023Z",
+    "createdAt":  "2026-08-12T04:30:09.029Z",
+    "id":  "Qh9s7B0Ps3ydwJ1X",
+    "name":  "ChatDesk Manager - Push FB",
+    "description":  "",
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "117be6a7-0f8b-49f1-b5cb-3fb4852934de",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       176,
+                                       16
+                                   ],
+                      "id":  "fb-push-0001-0000-0000-000000000001",
+                      "name":  "Webhook",
+                      "webhookId":  "117be6a7-0f8b-49f1-b5cb-3fb4852934de"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Build Facebook Messenger Graph API payload from api/send.php body\n * body: { userId, text, type, mediaUrl, mediaPreviewUrl, stickerPackage?, stickerId? }\n */\nconst body = $(\u0027Webhook\u0027).first().json.body || {};\nconst userId = String(body.userId || \u0027\u0027).trim();\nconst type = String(body.type || \u0027text\u0027);\nif (!userId) { throw new Error(\u0027Missing userId\u0027); }\n\nlet message;\nif (type === \u0027image\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  if (!url) { throw new Error(\u0027Missing mediaUrl for image\u0027); }\n  message = { attachment: { type: \u0027image\u0027, payload: { url: url, is_reusable: true } } };\n} else if (type === \u0027video\u0027 || type === \u0027audio\u0027 || type === \u0027file\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  if (!url) { throw new Error(\u0027Missing mediaUrl for \u0027 + type); }\n  message = { attachment: { type: type, payload: { url: url } } };\n} else if (type === \u0027sticker\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  message = url\n    ? { attachment: { type: \u0027image\u0027, payload: { url: url, is_reusable: true } } }\n    : { text: \u0027???? (???????????????????????????)\u0027 };\n} else {\n  message = { text: String(body.text || \u0027\u0027) };\n}\n\nreturn [{ json: {\n  recipient: { id: userId },\n  message: message,\n  messaging_type: \u0027RESPONSE\u0027,\n} }];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       416,
+                                       16
+                                   ],
+                      "id":  "fb-push-0001-0000-0000-000000000002",
+                      "name":  "Create FB Message"
+                  },
+                  {
+                      "parameters":  {
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "method":  "POST",
+                                         "url":  "https://graph.facebook.com/v26.0/me/messages",
+                                         "jsonBody":  "={{ $json }}",
+                                         "options":  {
+
+                                                     },
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "authentication":  "genericCredentialType"
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       656,
+                                       16
+                                   ],
+                      "id":  "fb-push-0001-0000-0000-000000000003",
+                      "name":  "Send FB Push API",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "05t8xP3nTiZXrRZv",
+                                                                 "name":  "FB Page Access Token"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={\"ok\":true,\"sent\":true}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       896,
+                                       16
+                                   ],
+                      "id":  "fb-push-0001-0000-0000-000000000004",
+                      "name":  "Reply ChatDesk"
+                  }
+              ],
+    "connections":  {
+                        "Webhook":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Create FB Message",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Create FB Message":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Send FB Push API",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Send FB Push API":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Reply ChatDesk",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "availableInMCP":  false
+                 },
+    "staticData":  null,
+    "meta":  {
+                 "templateCredsSetupCompleted":  true
+             },
+    "nodeGroups":  [
+
+                   ],
+    "pinData":  {
+
+                },
+    "versionId":  "7972a6eb-2abf-4ca6-ad19-f715f9145e55",
+    "activeVersionId":  "7972a6eb-2abf-4ca6-ad19-f715f9145e55",
+    "versionCounter":  2,
+    "triggerCount":  1,
+    "sourceWorkflowId":  null,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-08-12T04:30:09.033Z",
+                       "createdAt":  "2026-08-12T04:30:09.033Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "Qh9s7B0Ps3ydwJ1X",
+                       "projectId":  "v4AedWjgFZ69vUSU",
+                       "project":  {
+                                       "updatedAt":  "2026-08-01T02:28:42.416Z",
+                                       "createdAt":  "2026-07-31T18:56:03.553Z",
+                                       "id":  "v4AedWjgFZ69vUSU",
+                                       "name":  "Ittipol Intarateth \u003cittipolint@gmail.com\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "customTelemetryTags":  [
+
+                                                               ],
+                                       "creatorId":  "fc4399e9-a3d4-4596-9da5-dbad1afcb805"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-08-12T10:06:23.025Z",
+                          "createdAt":  "2026-08-12T10:06:23.025Z",
+                          "versionId":  "7972a6eb-2abf-4ca6-ad19-f715f9145e55",
+                          "workflowId":  "Qh9s7B0Ps3ydwJ1X",
+                          "nodes":  [
+                                        {
+                                            "parameters":  {
+                                                               "httpMethod":  "POST",
+                                                               "path":  "117be6a7-0f8b-49f1-b5cb-3fb4852934de",
+                                                               "responseMode":  "responseNode",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.webhook",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             176,
+                                                             16
+                                                         ],
+                                            "id":  "fb-push-0001-0000-0000-000000000001",
+                                            "name":  "Webhook",
+                                            "webhookId":  "117be6a7-0f8b-49f1-b5cb-3fb4852934de"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Build Facebook Messenger Graph API payload from api/send.php body\n * body: { userId, text, type, mediaUrl, mediaPreviewUrl, stickerPackage?, stickerId? }\n */\nconst body = $(\u0027Webhook\u0027).first().json.body || {};\nconst userId = String(body.userId || \u0027\u0027).trim();\nconst type = String(body.type || \u0027text\u0027);\nif (!userId) { throw new Error(\u0027Missing userId\u0027); }\n\nlet message;\nif (type === \u0027image\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  if (!url) { throw new Error(\u0027Missing mediaUrl for image\u0027); }\n  message = { attachment: { type: \u0027image\u0027, payload: { url: url, is_reusable: true } } };\n} else if (type === \u0027video\u0027 || type === \u0027audio\u0027 || type === \u0027file\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  if (!url) { throw new Error(\u0027Missing mediaUrl for \u0027 + type); }\n  message = { attachment: { type: type, payload: { url: url } } };\n} else if (type === \u0027sticker\u0027) {\n  const url = body.mediaUrl || \u0027\u0027;\n  message = url\n    ? { attachment: { type: \u0027image\u0027, payload: { url: url, is_reusable: true } } }\n    : { text: \u0027???? (???????????????????????????)\u0027 };\n} else {\n  message = { text: String(body.text || \u0027\u0027) };\n}\n\nreturn [{ json: {\n  recipient: { id: userId },\n  message: message,\n  messaging_type: \u0027RESPONSE\u0027,\n} }];"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             416,
+                                                             16
+                                                         ],
+                                            "id":  "fb-push-0001-0000-0000-000000000002",
+                                            "name":  "Create FB Message"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "sendBody":  true,
+                                                               "specifyBody":  "json",
+                                                               "method":  "POST",
+                                                               "url":  "https://graph.facebook.com/v26.0/me/messages",
+                                                               "jsonBody":  "={{ $json }}",
+                                                               "options":  {
+
+                                                                           },
+                                                               "genericAuthType":  "httpHeaderAuth",
+                                                               "authentication":  "genericCredentialType"
+                                                           },
+                                            "type":  "n8n-nodes-base.httpRequest",
+                                            "typeVersion":  4.2,
+                                            "position":  [
+                                                             656,
+                                                             16
+                                                         ],
+                                            "id":  "fb-push-0001-0000-0000-000000000003",
+                                            "name":  "Send FB Push API",
+                                            "credentials":  {
+                                                                "httpHeaderAuth":  {
+                                                                                       "id":  "05t8xP3nTiZXrRZv",
+                                                                                       "name":  "FB Page Access Token"
+                                                                                   }
+                                                            }
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "respondWith":  "json",
+                                                               "responseBody":  "={\"ok\":true,\"sent\":true}",
+                                                               "options":  {
+                                                                               "responseCode":  200
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.respondToWebhook",
+                                            "typeVersion":  1.1,
+                                            "position":  [
+                                                             896,
+                                                             16
+                                                         ],
+                                            "id":  "fb-push-0001-0000-0000-000000000004",
+                                            "name":  "Reply ChatDesk"
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Webhook":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Create FB Message",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                                              "Create FB Message":  {
+                                                                        "main":  [
+                                                                                     [
+                                                                                         {
+                                                                                             "node":  "Send FB Push API",
+                                                                                             "type":  "main",
+                                                                                             "index":  0
+                                                                                         }
+                                                                                     ]
+                                                                                 ]
+                                                                    },
+                                              "Send FB Push API":  {
+                                                                       "main":  [
+                                                                                    [
+                                                                                        {
+                                                                                            "node":  "Reply ChatDesk",
+                                                                                            "type":  "main",
+                                                                                            "index":  0
+                                                                                        }
+                                                                                    ]
+                                                                                ]
+                                                                   }
+                                          },
+                          "nodeGroups":  [
+
+                                         ],
+                          "authors":  "Ittipol Intarateth",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-08-12T10:06:37.261Z",
+                                                             "id":  48,
+                                                             "workflowId":  "Qh9s7B0Ps3ydwJ1X",
+                                                             "versionId":  "7972a6eb-2abf-4ca6-ad19-f715f9145e55",
+                                                             "event":  "activated",
+                                                             "userId":  "fc4399e9-a3d4-4596-9da5-dbad1afcb805"
+                                                         }
+                                                     ]
+                      }
+}

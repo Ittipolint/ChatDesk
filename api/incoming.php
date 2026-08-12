@@ -12,9 +12,10 @@
  *     "userId":      "Uxxxxxxxx",        (จำเป็น)
  *     "text":        "ข้อความ",           (จำเป็น)
  *     "sender":      "customer" | "bot",  (ไม่ใส่ = customer)
- *     "displayName": "ชื่อใน LINE",
+ *     "channel":     "line" | "fb",       (ไม่ใส่ = line)
+ *     "displayName": "ชื่อลูกค้า",
  *     "pictureUrl":  "url รูปโปรไฟล์",
- *     "messageId":   "id ข้อความของ LINE",  (ใส่ไว้กันข้อความซ้ำ)
+ *     "messageId":   "id ข้อความ",  (ใส่ไว้กันข้อความซ้ำ)
  *     "secret":      "รหัสลับ"             (เฉพาะเมื่อตั้งค่าไว้)
  *   }
  */
@@ -80,7 +81,8 @@ $sender = isset($input['sender']) && $input['sender'] === 'bot' ? 'bot' : 'custo
 $conv = cd_find_or_create_conversation(
     $userId,
     isset($input['displayName']) ? mb_substr(trim((string) $input['displayName']), 0, 150) : null,
-    isset($input['pictureUrl']) ? mb_substr(trim((string) $input['pictureUrl']), 0, 255) : null
+    isset($input['pictureUrl']) ? mb_substr(trim((string) $input['pictureUrl']), 0, 255) : null,
+    isset($input['channel']) && $input['channel'] === 'fb' ? 'fb' : 'line'
 );
 
 $mediaExtra = array();

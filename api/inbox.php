@@ -58,6 +58,7 @@ foreach ($st->fetchAll() as $r) {
                          ? $r['display_name'] : ('ลูกค้า #' . $r['id']),
         'picture'     => $r['picture_url'],
         'userId'      => $r['external_user_id'],
+        'channel'     => $r['channel'],
         'status'      => $r['status'],
         'botEnabled'  => ((int) $r['bot_enabled'] === 1),
         'unread'      => (int) $r['unread_count'],

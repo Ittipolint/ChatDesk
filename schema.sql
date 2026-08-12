@@ -5,12 +5,12 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------------------
--- ตารางห้องแชท (1 รายการ = 1 LINE user)
+-- ตารางห้องแชท (1 รายการ = 1 ผู้ใช้ต่อช่องทาง เช่น LINE / Facebook Messenger)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `cd_conversations` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `channel` varchar(20) NOT NULL DEFAULT 'line',
-  `external_user_id` varchar(64) NOT NULL COMMENT 'LINE userId (Uxxxx...)',
+  `channel` varchar(20) NOT NULL DEFAULT 'line' COMMENT 'line = LINE, fb = Facebook Messenger',
+  `external_user_id` varchar(64) NOT NULL COMMENT 'LINE userId (Uxxxx...) หรือ Messenger PSID',
   `display_name` varchar(150) DEFAULT NULL,
   `picture_url` varchar(255) DEFAULT NULL,
   `status` enum('open','closed') NOT NULL DEFAULT 'open',

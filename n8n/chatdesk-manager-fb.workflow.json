@@ -1,0 +1,1039 @@
+﻿{
+    "updatedAt":  "2026-08-12T10:06:25.939Z",
+    "createdAt":  "2026-08-12T04:28:29.022Z",
+    "id":  "SW4x88rq3XyEvGEF",
+    "name":  "ChatDesk Manager - FB",
+    "description":  "",
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "GET,POST",
+                                         "path":  "e2d195d3-2c94-4a27-b916-ee45086cc985",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -1900,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000001",
+                      "name":  "Webhook",
+                      "webhookId":  "e2d195d3-2c94-4a27-b916-ee45086cc985"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  1
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "if1",
+                                                                                   "leftValue":  "={{ $(\u0027Webhook\u0027).first().json.query[\u0027hub.mode\u0027] }}",
+                                                                                   "rightValue":  "subscribe",
+                                                                                   "operator":  {
+                                                                                                    "type":  "string",
+                                                                                                    "operation":  "equals",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -1660,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000002",
+                      "name":  "Is Verify Request"
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "text",
+                                         "responseBody":  "={{ $(\u0027Webhook\u0027).first().json.query[\u0027hub.challenge\u0027] }}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -1452,
+                                       -180
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000003",
+                      "name":  "Respond Challenge"
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={\"status\":\"ok\"}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -1452,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000004",
+                      "name":  "Respond 200"
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "c1",
+                                                                                     "name":  "CHATDESK_URL",
+                                                                                     "value":  "https://ittipolint-sbu.veya.co.th/week7-1/chatdesk/api/incoming.php",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "c2",
+                                                                                     "name":  "CHATDESK_SECRET",
+                                                                                     "value":  "",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "c3",
+                                                                                     "name":  "FB_GRAPH_VERSION",
+                                                                                     "value":  "v26.0",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       -1244,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000005",
+                      "name":  "Set Config"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Parse Facebook Messenger webhook -\u003e one item per incoming message\n * Output: { userId, text, messageType, messageId, mediaUrl?, mediaPreviewUrl?, seq }\n * ???????????? echo (?????????????????????????????????????????????????????????????????????????????????????????????) ????????? event ????????????????????????????????????????????????\n */\nconst body = $(\u0027Webhook\u0027).first().json.body || {};\nconst entries = Array.isArray(body.entry) ? body.entry : [];\nconst out = [];\nlet seq = 0;\n\nfor (const entry of entries) {\n  const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];\n  for (const m of messaging) {\n    if (!m || !m.message) { continue; }\n    if (m.message.is_echo) { continue; }\n    const userId = (m.sender \u0026\u0026 m.sender.id) ? m.sender.id : \u0027\u0027;\n    if (!userId) { continue; }\n\n    const msg = m.message;\n    const atts = Array.isArray(msg.attachments) ? msg.attachments : [];\n    let mtype = \u0027text\u0027;\n    let text = \u0027\u0027;\n    if (atts.length \u003e 0) {\n      const a = atts[0];\n      const t = a.type || \u0027file\u0027;\n      mtype = t;\n      if (t === \u0027image\u0027)       { text = \u0027[?????????]\u0027; }\n      else if (t === \u0027video\u0027)  { text = \u0027[??????????????????]\u0027; }\n      else if (t === \u0027audio\u0027)  { text = \u0027[???????????????]\u0027; }\n      else if (t === \u0027file\u0027)   { text = \u0027[????????????]\u0027; }\n      else if (t === \u0027location\u0027) { text = \u0027[?????????????????????]\u0027; }\n      else                     { text = \u0027[\u0027 + t + \u0027]\u0027; }\n    } else if (typeof msg.text === \u0027string\u0027) {\n      text = msg.text.trim();\n    }\n    if (!text) { continue; }\n\n    const item = {\n      userId: userId,\n      text: text,\n      messageType: mtype,\n      messageId: msg.mid || \u0027\u0027,\n      seq: seq++,\n    };\n    if (atts.length \u003e 0 \u0026\u0026 atts[0].payload \u0026\u0026 atts[0].payload.url) {\n      item.mediaUrl = atts[0].payload.url;\n      item.mediaPreviewUrl = atts[0].payload.url;\n    }\n    out.push({ json: item });\n  }\n}\nreturn out;"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -1036,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000006",
+                      "name":  "Parse FB Events"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "GET",
+                                         "url":  "=https://graph.facebook.com/{{ $(\u0027Set Config\u0027).first().json.FB_GRAPH_VERSION || \u0027v26.0\u0027 }}/{{ $json.userId }}?fields=id,first_name,last_name,profile_pic",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -828,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000007",
+                      "name":  "Get FB Profile",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "05t8xP3nTiZXrRZv",
+                                                                 "name":  "FB Page Access Token"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Forward to ChatDesk incoming.php (channel=fb) ??????????????? media URL ??????????????????????????? FB ????????? ??? */\nconst cfg      = $(\u0027Set Config\u0027).first().json;\nconst events   = $(\u0027Parse FB Events\u0027).all();   // ??????????????????????????? parse ?????? (???????????????????????? entry order)\nconst profiles = $input.all();                 // Get FB Profile output 1:1 ???????????????????????? item\n\nconst out = [];\nfor (let i = 0; i \u003c events.length; i++) {\n  const ev = events[i].json || {};\n  const pr = (profiles[i] \u0026\u0026 profiles[i].json) ? profiles[i].json : {};\n  const firstName   = pr.first_name || \u0027\u0027;\n  const lastName    = pr.last_name || \u0027\u0027;\n  const displayName = [firstName, lastName].filter(Boolean).join(\u0027 \u0027);\n  const pictureUrl  = pr.profile_pic || \u0027\u0027;\n\n  let botEnabled = true;\n  const payload = {\n    userId: ev.userId,\n    text: ev.text,\n    sender: \u0027customer\u0027,\n    messageId: ev.messageId,\n    messageType: ev.messageType,\n    channel: \u0027fb\u0027,\n  };\n  if (ev.mediaUrl) {\n    payload.mediaUrl = ev.mediaUrl;\n    payload.mediaPreviewUrl = ev.mediaPreviewUrl || ev.mediaUrl;\n  }\n  if (displayName) { payload.displayName = displayName; }\n  if (pictureUrl)  { payload.pictureUrl = pictureUrl; }\n  if (cfg.CHATDESK_SECRET) { payload.secret = cfg.CHATDESK_SECRET; }\n\n  try {\n    const res = await this.helpers.httpRequest({\n      method: \u0027POST\u0027, url: cfg.CHATDESK_URL, json: true, timeout: 20000, body: payload,\n    });\n    botEnabled = !(res \u0026\u0026 res.botEnabled === false);\n  } catch (err) {\n    botEnabled = true;\n  }\n\n  out.push({ json: {\n    userId: ev.userId,\n    text: ev.text,\n    displayName: displayName,\n    botEnabled: botEnabled,\n    isText: ev.messageType === \u0027text\u0027,\n  } });\n}\n\nreturn out;"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -620,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000008",
+                      "name":  "Send to ChatDesk"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "strict",
+                                                                            "version":  1
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "if1",
+                                                                                   "leftValue":  "={{ $json.botEnabled }}",
+                                                                                   "rightValue":  true,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "true",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               },
+                                                                               {
+                                                                                   "id":  "if2",
+                                                                                   "leftValue":  "={{ $json.isText }}",
+                                                                                   "rightValue":  true,
+                                                                                   "operator":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "operation":  "true",
+                                                                                                    "singleValue":  true
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -412,
+                                       40
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000009",
+                      "name":  "Bot Can Reply"
+                  },
+                  {
+                      "parameters":  {
+                                         "promptType":  "define",
+                                         "text":  "={{ $json.text }}",
+                                         "options":  {
+                                                         "systemMessage":  "=??????????????????????????????????????????????????????????????????????????????/???????????????????????? Facebook Messenger (ChatDesk)\n??????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????? ????????????????????????????????????????????????????????? ???????????????????????????????????????????????????????????????????????????\n???????????????????????????????????????????????????????????????????????????????????????????????????????????? ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????????????????????????????????????????????????????????\n?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????????????????????????????????????????????????????????????????????\n?????????????????????????????? (???????????????): {{ $json.displayName || \u0027???????????????????????????????????????\u0027 }}"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.agent",
+                      "typeVersion":  3.1,
+                      "position":  [
+                                       -204,
+                                       -140
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000010",
+                      "name":  "AI Agent"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelName":  "models/gemini-2.5-flash",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -156,
+                                       96
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000011",
+                      "name":  "Google Gemini Chat Model",
+                      "credentials":  {
+                                          "googlePalmApi":  {
+                                                                "id":  "C4mlKG07dwahWcK6",
+                                                                "name":  "Google Gemini(PaLM) Api account"
+                                                            }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Take AI Agent output, strip thinking tags, attach userId from Send to ChatDesk */\nconst items = $input.all();\nconst out = [];\n\nfor (let i = 0; i \u003c items.length; i++) {\n  let userId = \u0027\u0027;\n  try {\n    userId = $(\u0027Send to ChatDesk\u0027).itemMatching(i).json.userId || \u0027\u0027;\n  } catch (err) {\n    userId = \u0027\u0027;\n  }\n\n  const raw = items[i].json.output || items[i].json.text || \u0027\u0027;\n  const replyText = String(raw).replace(/\u003cthink\u003e[\\s\\S]*?\u003c\\/think\u003e/g, \u0027\u0027).trim();\n\n  if (userId \u0026\u0026 replyText) {\n    out.push({ json: { userId: userId, replyText: replyText } });\n  }\n}\n\nreturn out;"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       4,
+                                       -140
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000012",
+                      "name":  "Build Reply"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Build Facebook Messenger Graph API payload from bot reply (text only) */\nconst items = $input.all();\nconst out = [];\nfor (const it of items) {\n  const j = it.json || {};\n  if (!j.userId || !j.replyText) { continue; }\n  out.push({ json: {\n    recipient: { id: j.userId },\n    message: { text: j.replyText },\n    messaging_type: \u0027RESPONSE\u0027,\n  } });\n}\nreturn out;"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       212,
+                                       -140
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000013",
+                      "name":  "Create FB Message"
+                  },
+                  {
+                      "parameters":  {
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "method":  "POST",
+                                         "url":  "=https://graph.facebook.com/{{ $(\u0027Set Config\u0027).first().json.FB_GRAPH_VERSION || \u0027v26.0\u0027 }}/me/messages",
+                                         "jsonBody":  "={{ $json }}",
+                                         "options":  {
+
+                                                     },
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "authentication":  "genericCredentialType"
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       420,
+                                       -140
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000014",
+                      "name":  "Send FB",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "05t8xP3nTiZXrRZv",
+                                                                 "name":  "FB Page Access Token"
+                                                             }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "/* Save bot reply into ChatDesk (channel=fb) */\nconst cfg = $(\u0027Set Config\u0027).first().json;\nfor (const item of $(\u0027Build Reply\u0027).all()) {\n  const j = item.json || {};\n  if (!j.userId || !j.replyText) { continue; }\n  const payload = { userId: j.userId, text: j.replyText, sender: \u0027bot\u0027, channel: \u0027fb\u0027 };\n  if (cfg.CHATDESK_SECRET) { payload.secret = cfg.CHATDESK_SECRET; }\n  const res = await this.helpers.httpRequest({\n    method: \u0027POST\u0027, url: cfg.CHATDESK_URL, json: true, timeout: 20000, body: payload,\n  });\n  if (!res || res.ok !== true) {\n    throw new Error(\u0027ChatDesk save failed: \u0027 + JSON.stringify(res));\n  }\n}\nreturn $input.all();"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       628,
+                                       -140
+                                   ],
+                      "id":  "fb-webhook-0001-0000-0000-000000000015",
+                      "name":  "Notify ChatDesk"
+                  }
+              ],
+    "connections":  {
+                        "Webhook":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Is Verify Request",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Is Verify Request":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Respond Challenge",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ],
+                                                               [
+                                                                   {
+                                                                       "node":  "Respond 200",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Respond 200":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Set Config",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        },
+                        "Set Config":  {
+                                           "main":  [
+                                                        [
+                                                            {
+                                                                "node":  "Parse FB Events",
+                                                                "type":  "main",
+                                                                "index":  0
+                                                            }
+                                                        ]
+                                                    ]
+                                       },
+                        "Parse FB Events":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Get FB Profile",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Get FB Profile":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Send to ChatDesk",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "Send to ChatDesk":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Bot Can Reply",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Bot Can Reply":  {
+                                              "main":  [
+                                                           [
+                                                               {
+                                                                   "node":  "AI Agent",
+                                                                   "type":  "main",
+                                                                   "index":  0
+                                                               }
+                                                           ]
+                                                       ]
+                                          },
+                        "AI Agent":  {
+                                         "main":  [
+                                                      [
+                                                          {
+                                                              "node":  "Build Reply",
+                                                              "type":  "main",
+                                                              "index":  0
+                                                          }
+                                                      ]
+                                                  ]
+                                     },
+                        "Build Reply":  {
+                                            "main":  [
+                                                         [
+                                                             {
+                                                                 "node":  "Create FB Message",
+                                                                 "type":  "main",
+                                                                 "index":  0
+                                                             }
+                                                         ]
+                                                     ]
+                                        },
+                        "Create FB Message":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Send FB",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Send FB":  {
+                                        "main":  [
+                                                     [
+                                                         {
+                                                             "node":  "Notify ChatDesk",
+                                                             "type":  "main",
+                                                             "index":  0
+                                                         }
+                                                     ]
+                                                 ]
+                                    },
+                        "Google Gemini Chat Model":  {
+                                                         "ai_languageModel":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "AI Agent",
+                                                                                          "type":  "ai_languageModel",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                     }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "availableInMCP":  false
+                 },
+    "staticData":  null,
+    "meta":  {
+
+             },
+    "nodeGroups":  [
+
+                   ],
+    "pinData":  {
+
+                },
+    "versionId":  "e5dea1b1-ef5c-44f7-b2f8-853f79bf3a74",
+    "activeVersionId":  "e5dea1b1-ef5c-44f7-b2f8-853f79bf3a74",
+    "versionCounter":  2,
+    "triggerCount":  1,
+    "sourceWorkflowId":  null,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-08-12T04:28:29.026Z",
+                       "createdAt":  "2026-08-12T04:28:29.026Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "SW4x88rq3XyEvGEF",
+                       "projectId":  "v4AedWjgFZ69vUSU",
+                       "project":  {
+                                       "updatedAt":  "2026-08-01T02:28:42.416Z",
+                                       "createdAt":  "2026-07-31T18:56:03.553Z",
+                                       "id":  "v4AedWjgFZ69vUSU",
+                                       "name":  "Ittipol Intarateth \u003cittipolint@gmail.com\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "customTelemetryTags":  [
+
+                                                               ],
+                                       "creatorId":  "fc4399e9-a3d4-4596-9da5-dbad1afcb805"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-08-12T10:06:25.940Z",
+                          "createdAt":  "2026-08-12T10:06:25.940Z",
+                          "versionId":  "e5dea1b1-ef5c-44f7-b2f8-853f79bf3a74",
+                          "workflowId":  "SW4x88rq3XyEvGEF",
+                          "nodes":  [
+                                        {
+                                            "parameters":  {
+                                                               "httpMethod":  "GET,POST",
+                                                               "path":  "e2d195d3-2c94-4a27-b916-ee45086cc985",
+                                                               "responseMode":  "responseNode",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.webhook",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -1900,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000001",
+                                            "name":  "Webhook",
+                                            "webhookId":  "e2d195d3-2c94-4a27-b916-ee45086cc985"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "conditions":  {
+                                                                                  "options":  {
+                                                                                                  "caseSensitive":  true,
+                                                                                                  "leftValue":  "",
+                                                                                                  "typeValidation":  "strict",
+                                                                                                  "version":  1
+                                                                                              },
+                                                                                  "conditions":  [
+                                                                                                     {
+                                                                                                         "id":  "if1",
+                                                                                                         "leftValue":  "={{ $(\u0027Webhook\u0027).first().json.query[\u0027hub.mode\u0027] }}",
+                                                                                                         "rightValue":  "subscribe",
+                                                                                                         "operator":  {
+                                                                                                                          "type":  "string",
+                                                                                                                          "operation":  "equals",
+                                                                                                                          "singleValue":  true
+                                                                                                                      }
+                                                                                                     }
+                                                                                                 ],
+                                                                                  "combinator":  "and"
+                                                                              },
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.if",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -1660,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000002",
+                                            "name":  "Is Verify Request"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "respondWith":  "text",
+                                                               "responseBody":  "={{ $(\u0027Webhook\u0027).first().json.query[\u0027hub.challenge\u0027] }}",
+                                                               "options":  {
+                                                                               "responseCode":  200
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.respondToWebhook",
+                                            "typeVersion":  1.1,
+                                            "position":  [
+                                                             -1452,
+                                                             -180
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000003",
+                                            "name":  "Respond Challenge"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "respondWith":  "json",
+                                                               "responseBody":  "={\"status\":\"ok\"}",
+                                                               "options":  {
+                                                                               "responseCode":  200
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.respondToWebhook",
+                                            "typeVersion":  1.1,
+                                            "position":  [
+                                                             -1452,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000004",
+                                            "name":  "Respond 200"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "assignments":  {
+                                                                                   "assignments":  [
+                                                                                                       {
+                                                                                                           "id":  "c1",
+                                                                                                           "name":  "CHATDESK_URL",
+                                                                                                           "value":  "https://ittipolint-sbu.veya.co.th/week7-1/chatdesk/api/incoming.php",
+                                                                                                           "type":  "string"
+                                                                                                       },
+                                                                                                       {
+                                                                                                           "id":  "c2",
+                                                                                                           "name":  "CHATDESK_SECRET",
+                                                                                                           "value":  "",
+                                                                                                           "type":  "string"
+                                                                                                       },
+                                                                                                       {
+                                                                                                           "id":  "c3",
+                                                                                                           "name":  "FB_GRAPH_VERSION",
+                                                                                                           "value":  "v26.0",
+                                                                                                           "type":  "string"
+                                                                                                       }
+                                                                                                   ]
+                                                                               },
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.set",
+                                            "typeVersion":  3.4,
+                                            "position":  [
+                                                             -1244,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000005",
+                                            "name":  "Set Config"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Parse Facebook Messenger webhook -\u003e one item per incoming message\n * Output: { userId, text, messageType, messageId, mediaUrl?, mediaPreviewUrl?, seq }\n * ???????????? echo (?????????????????????????????????????????????????????????????????????????????????????????????) ????????? event ????????????????????????????????????????????????\n */\nconst body = $(\u0027Webhook\u0027).first().json.body || {};\nconst entries = Array.isArray(body.entry) ? body.entry : [];\nconst out = [];\nlet seq = 0;\n\nfor (const entry of entries) {\n  const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];\n  for (const m of messaging) {\n    if (!m || !m.message) { continue; }\n    if (m.message.is_echo) { continue; }\n    const userId = (m.sender \u0026\u0026 m.sender.id) ? m.sender.id : \u0027\u0027;\n    if (!userId) { continue; }\n\n    const msg = m.message;\n    const atts = Array.isArray(msg.attachments) ? msg.attachments : [];\n    let mtype = \u0027text\u0027;\n    let text = \u0027\u0027;\n    if (atts.length \u003e 0) {\n      const a = atts[0];\n      const t = a.type || \u0027file\u0027;\n      mtype = t;\n      if (t === \u0027image\u0027)       { text = \u0027[?????????]\u0027; }\n      else if (t === \u0027video\u0027)  { text = \u0027[??????????????????]\u0027; }\n      else if (t === \u0027audio\u0027)  { text = \u0027[???????????????]\u0027; }\n      else if (t === \u0027file\u0027)   { text = \u0027[????????????]\u0027; }\n      else if (t === \u0027location\u0027) { text = \u0027[?????????????????????]\u0027; }\n      else                     { text = \u0027[\u0027 + t + \u0027]\u0027; }\n    } else if (typeof msg.text === \u0027string\u0027) {\n      text = msg.text.trim();\n    }\n    if (!text) { continue; }\n\n    const item = {\n      userId: userId,\n      text: text,\n      messageType: mtype,\n      messageId: msg.mid || \u0027\u0027,\n      seq: seq++,\n    };\n    if (atts.length \u003e 0 \u0026\u0026 atts[0].payload \u0026\u0026 atts[0].payload.url) {\n      item.mediaUrl = atts[0].payload.url;\n      item.mediaPreviewUrl = atts[0].payload.url;\n    }\n    out.push({ json: item });\n  }\n}\nreturn out;"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -1036,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000006",
+                                            "name":  "Parse FB Events"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "method":  "GET",
+                                                               "url":  "=https://graph.facebook.com/{{ $(\u0027Set Config\u0027).first().json.FB_GRAPH_VERSION || \u0027v26.0\u0027 }}/{{ $json.userId }}?fields=id,first_name,last_name,profile_pic",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.httpRequest",
+                                            "typeVersion":  4.2,
+                                            "position":  [
+                                                             -828,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000007",
+                                            "name":  "Get FB Profile",
+                                            "credentials":  {
+                                                                "httpHeaderAuth":  {
+                                                                                       "id":  "05t8xP3nTiZXrRZv",
+                                                                                       "name":  "FB Page Access Token"
+                                                                                   }
+                                                            }
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Forward to ChatDesk incoming.php (channel=fb) ??????????????? media URL ??????????????????????????? FB ????????? ??? */\nconst cfg      = $(\u0027Set Config\u0027).first().json;\nconst events   = $(\u0027Parse FB Events\u0027).all();   // ??????????????????????????? parse ?????? (???????????????????????? entry order)\nconst profiles = $input.all();                 // Get FB Profile output 1:1 ???????????????????????? item\n\nconst out = [];\nfor (let i = 0; i \u003c events.length; i++) {\n  const ev = events[i].json || {};\n  const pr = (profiles[i] \u0026\u0026 profiles[i].json) ? profiles[i].json : {};\n  const firstName   = pr.first_name || \u0027\u0027;\n  const lastName    = pr.last_name || \u0027\u0027;\n  const displayName = [firstName, lastName].filter(Boolean).join(\u0027 \u0027);\n  const pictureUrl  = pr.profile_pic || \u0027\u0027;\n\n  let botEnabled = true;\n  const payload = {\n    userId: ev.userId,\n    text: ev.text,\n    sender: \u0027customer\u0027,\n    messageId: ev.messageId,\n    messageType: ev.messageType,\n    channel: \u0027fb\u0027,\n  };\n  if (ev.mediaUrl) {\n    payload.mediaUrl = ev.mediaUrl;\n    payload.mediaPreviewUrl = ev.mediaPreviewUrl || ev.mediaUrl;\n  }\n  if (displayName) { payload.displayName = displayName; }\n  if (pictureUrl)  { payload.pictureUrl = pictureUrl; }\n  if (cfg.CHATDESK_SECRET) { payload.secret = cfg.CHATDESK_SECRET; }\n\n  try {\n    const res = await this.helpers.httpRequest({\n      method: \u0027POST\u0027, url: cfg.CHATDESK_URL, json: true, timeout: 20000, body: payload,\n    });\n    botEnabled = !(res \u0026\u0026 res.botEnabled === false);\n  } catch (err) {\n    botEnabled = true;\n  }\n\n  out.push({ json: {\n    userId: ev.userId,\n    text: ev.text,\n    displayName: displayName,\n    botEnabled: botEnabled,\n    isText: ev.messageType === \u0027text\u0027,\n  } });\n}\n\nreturn out;"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -620,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000008",
+                                            "name":  "Send to ChatDesk"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "conditions":  {
+                                                                                  "options":  {
+                                                                                                  "caseSensitive":  true,
+                                                                                                  "leftValue":  "",
+                                                                                                  "typeValidation":  "strict",
+                                                                                                  "version":  1
+                                                                                              },
+                                                                                  "conditions":  [
+                                                                                                     {
+                                                                                                         "id":  "if1",
+                                                                                                         "leftValue":  "={{ $json.botEnabled }}",
+                                                                                                         "rightValue":  true,
+                                                                                                         "operator":  {
+                                                                                                                          "type":  "boolean",
+                                                                                                                          "operation":  "true",
+                                                                                                                          "singleValue":  true
+                                                                                                                      }
+                                                                                                     },
+                                                                                                     {
+                                                                                                         "id":  "if2",
+                                                                                                         "leftValue":  "={{ $json.isText }}",
+                                                                                                         "rightValue":  true,
+                                                                                                         "operator":  {
+                                                                                                                          "type":  "boolean",
+                                                                                                                          "operation":  "true",
+                                                                                                                          "singleValue":  true
+                                                                                                                      }
+                                                                                                     }
+                                                                                                 ],
+                                                                                  "combinator":  "and"
+                                                                              },
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "n8n-nodes-base.if",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -412,
+                                                             40
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000009",
+                                            "name":  "Bot Can Reply"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "promptType":  "define",
+                                                               "text":  "={{ $json.text }}",
+                                                               "options":  {
+                                                                               "systemMessage":  "=??????????????????????????????????????????????????????????????????????????????/???????????????????????? Facebook Messenger (ChatDesk)\n??????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????? ????????????????????????????????????????????????????????? ???????????????????????????????????????????????????????????????????????????\n???????????????????????????????????????????????????????????????????????????????????????????????????????????? ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????????????????????????????????????????????????????????\n?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? ?????????????????????????????????????????????????????????????????????????????????\n?????????????????????????????? (???????????????): {{ $json.displayName || \u0027???????????????????????????????????????\u0027 }}"
+                                                                           }
+                                                           },
+                                            "type":  "@n8n/n8n-nodes-langchain.agent",
+                                            "typeVersion":  3.1,
+                                            "position":  [
+                                                             -204,
+                                                             -140
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000010",
+                                            "name":  "AI Agent"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "modelName":  "models/gemini-2.5-flash",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "type":  "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             -156,
+                                                             96
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000011",
+                                            "name":  "Google Gemini Chat Model",
+                                            "credentials":  {
+                                                                "googlePalmApi":  {
+                                                                                      "id":  "C4mlKG07dwahWcK6",
+                                                                                      "name":  "Google Gemini(PaLM) Api account"
+                                                                                  }
+                                                            }
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Take AI Agent output, strip thinking tags, attach userId from Send to ChatDesk */\nconst items = $input.all();\nconst out = [];\n\nfor (let i = 0; i \u003c items.length; i++) {\n  let userId = \u0027\u0027;\n  try {\n    userId = $(\u0027Send to ChatDesk\u0027).itemMatching(i).json.userId || \u0027\u0027;\n  } catch (err) {\n    userId = \u0027\u0027;\n  }\n\n  const raw = items[i].json.output || items[i].json.text || \u0027\u0027;\n  const replyText = String(raw).replace(/\u003cthink\u003e[\\s\\S]*?\u003c\\/think\u003e/g, \u0027\u0027).trim();\n\n  if (userId \u0026\u0026 replyText) {\n    out.push({ json: { userId: userId, replyText: replyText } });\n  }\n}\n\nreturn out;"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             4,
+                                                             -140
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000012",
+                                            "name":  "Build Reply"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Build Facebook Messenger Graph API payload from bot reply (text only) */\nconst items = $input.all();\nconst out = [];\nfor (const it of items) {\n  const j = it.json || {};\n  if (!j.userId || !j.replyText) { continue; }\n  out.push({ json: {\n    recipient: { id: j.userId },\n    message: { text: j.replyText },\n    messaging_type: \u0027RESPONSE\u0027,\n  } });\n}\nreturn out;"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             212,
+                                                             -140
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000013",
+                                            "name":  "Create FB Message"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "sendBody":  true,
+                                                               "specifyBody":  "json",
+                                                               "method":  "POST",
+                                                               "url":  "=https://graph.facebook.com/{{ $(\u0027Set Config\u0027).first().json.FB_GRAPH_VERSION || \u0027v26.0\u0027 }}/me/messages",
+                                                               "jsonBody":  "={{ $json }}",
+                                                               "options":  {
+
+                                                                           },
+                                                               "genericAuthType":  "httpHeaderAuth",
+                                                               "authentication":  "genericCredentialType"
+                                                           },
+                                            "type":  "n8n-nodes-base.httpRequest",
+                                            "typeVersion":  4.2,
+                                            "position":  [
+                                                             420,
+                                                             -140
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000014",
+                                            "name":  "Send FB",
+                                            "credentials":  {
+                                                                "httpHeaderAuth":  {
+                                                                                       "id":  "05t8xP3nTiZXrRZv",
+                                                                                       "name":  "FB Page Access Token"
+                                                                                   }
+                                                            }
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "/* Save bot reply into ChatDesk (channel=fb) */\nconst cfg = $(\u0027Set Config\u0027).first().json;\nfor (const item of $(\u0027Build Reply\u0027).all()) {\n  const j = item.json || {};\n  if (!j.userId || !j.replyText) { continue; }\n  const payload = { userId: j.userId, text: j.replyText, sender: \u0027bot\u0027, channel: \u0027fb\u0027 };\n  if (cfg.CHATDESK_SECRET) { payload.secret = cfg.CHATDESK_SECRET; }\n  const res = await this.helpers.httpRequest({\n    method: \u0027POST\u0027, url: cfg.CHATDESK_URL, json: true, timeout: 20000, body: payload,\n  });\n  if (!res || res.ok !== true) {\n    throw new Error(\u0027ChatDesk save failed: \u0027 + JSON.stringify(res));\n  }\n}\nreturn $input.all();"
+                                                           },
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             628,
+                                                             -140
+                                                         ],
+                                            "id":  "fb-webhook-0001-0000-0000-000000000015",
+                                            "name":  "Notify ChatDesk"
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Webhook":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Is Verify Request",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                                              "Is Verify Request":  {
+                                                                        "main":  [
+                                                                                     [
+                                                                                         {
+                                                                                             "node":  "Respond Challenge",
+                                                                                             "type":  "main",
+                                                                                             "index":  0
+                                                                                         }
+                                                                                     ],
+                                                                                     [
+                                                                                         {
+                                                                                             "node":  "Respond 200",
+                                                                                             "type":  "main",
+                                                                                             "index":  0
+                                                                                         }
+                                                                                     ]
+                                                                                 ]
+                                                                    },
+                                              "Respond 200":  {
+                                                                  "main":  [
+                                                                               [
+                                                                                   {
+                                                                                       "node":  "Set Config",
+                                                                                       "type":  "main",
+                                                                                       "index":  0
+                                                                                   }
+                                                                               ]
+                                                                           ]
+                                                              },
+                                              "Set Config":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "Parse FB Events",
+                                                                                      "type":  "main",
+                                                                                      "index":  0
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                                              "Parse FB Events":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Get FB Profile",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                                              "Get FB Profile":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Send to ChatDesk",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "Send to ChatDesk":  {
+                                                                       "main":  [
+                                                                                    [
+                                                                                        {
+                                                                                            "node":  "Bot Can Reply",
+                                                                                            "type":  "main",
+                                                                                            "index":  0
+                                                                                        }
+                                                                                    ]
+                                                                                ]
+                                                                   },
+                                              "Bot Can Reply":  {
+                                                                    "main":  [
+                                                                                 [
+                                                                                     {
+                                                                                         "node":  "AI Agent",
+                                                                                         "type":  "main",
+                                                                                         "index":  0
+                                                                                     }
+                                                                                 ]
+                                                                             ]
+                                                                },
+                                              "AI Agent":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Build Reply",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                                              "Build Reply":  {
+                                                                  "main":  [
+                                                                               [
+                                                                                   {
+                                                                                       "node":  "Create FB Message",
+                                                                                       "type":  "main",
+                                                                                       "index":  0
+                                                                                   }
+                                                                               ]
+                                                                           ]
+                                                              },
+                                              "Create FB Message":  {
+                                                                        "main":  [
+                                                                                     [
+                                                                                         {
+                                                                                             "node":  "Send FB",
+                                                                                             "type":  "main",
+                                                                                             "index":  0
+                                                                                         }
+                                                                                     ]
+                                                                                 ]
+                                                                    },
+                                              "Send FB":  {
+                                                              "main":  [
+                                                                           [
+                                                                               {
+                                                                                   "node":  "Notify ChatDesk",
+                                                                                   "type":  "main",
+                                                                                   "index":  0
+                                                                               }
+                                                                           ]
+                                                                       ]
+                                                          },
+                                              "Google Gemini Chat Model":  {
+                                                                               "ai_languageModel":  [
+                                                                                                        [
+                                                                                                            {
+                                                                                                                "node":  "AI Agent",
+                                                                                                                "type":  "ai_languageModel",
+                                                                                                                "index":  0
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    ]
+                                                                           }
+                                          },
+                          "nodeGroups":  [
+
+                                         ],
+                          "authors":  "Ittipol Intarateth",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-08-12T10:06:36.985Z",
+                                                             "id":  47,
+                                                             "workflowId":  "SW4x88rq3XyEvGEF",
+                                                             "versionId":  "e5dea1b1-ef5c-44f7-b2f8-853f79bf3a74",
+                                                             "event":  "activated",
+                                                             "userId":  "fc4399e9-a3d4-4596-9da5-dbad1afcb805"
+                                                         }
+                                                     ]
+                      }
+}

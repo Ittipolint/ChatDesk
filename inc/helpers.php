@@ -348,3 +348,79 @@ function cd_push_line($userId, $text, $type = 'text', $media = array())
     }
     return array('ok' => true, 'error' => '', 'raw' => (string) $raw);
 }
+
+/* ------------------------------- ส่ง Facebook Messenger ------------------------- */
+
+/**
+ * ส่งข้อความออกไปหาลูกค้าทาง Facebook Messenger โดยยิงผ่าน webhook ของ n8n
+ * (page access token เก็บอยู่ใน credential ของ n8n ไม่ต้องเอามาไว้บน hosting)
+ *
+ * $type: text | image | video | sticker  (sticker ของ LINE ไม่รองรับ → นำไปส่งเป็นภาพ/ข้อความใน FB)
+ * $media: สำหรับ image/video → { mediaUrl, mediaPreviewUrl }
+ *         สำหรับ sticker    → { stickerPackage, stickerId }
+ */
+function cd_push_fb($userId, $text, $type = 'text', $media = array())
+{
+    global $CFG;
+    $url = isset($CFG['n8n']['push_fb_url']) ? trim((string) $CFG['n8n']['push_fb_url']) : '';
+
+    $parts = parse_url($url);
+    if ($parts === false || empty($parts['scheme']) || empty($parts['host'])
+        || !in_array(strtolower($parts['scheme']), array('http', 'https'), true)) {
+        return array('ok' => false, 'error' => 'URL สำหรับส่ง Facebook Messenger ไม่ถูกต้อง (ตรวจค่า n8n.push_fb_url ใน config.php)');
+    }
+    if (!function_exists('curl_init')) {
+        return array('ok' => false, 'error' => 'hosting นี้ไม่ได้เปิดใช้ PHP cURL extension');
+    }
+
+    $payload = array(
+        'userId' => $userId,
+        'text'   => $text,
+        'type'   => $type,
+        'source' => 'chatdesk-agent',
+    );
+    if ($type === 'image' || $type === 'video') {
+        $payload['mediaUrl']       = isset($media['mediaUrl']) ? $media['mediaUrl'] : '';
+        $payload['mediaPreviewUrl'] = isset($media['mediaPreviewUrl']) ? $media['mediaPreviewUrl'] : '';
+    } elseif ($type === 'sticker') {
+        $payload['stickerPackage'] = isset($media['stickerPackage']) ? $media['stickerPackage'] : '';
+        $payload['stickerId']      = isset($media['stickerId']) ? $media['stickerId'] : '';
+    }
+    if ($CFG['n8n']['secret'] !== '') {
+        $payload['secret'] = $CFG['n8n']['secret'];
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, array(
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => array('Content-Type: application/json; charset=utf-8'),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => (int) $CFG['n8n']['timeout'],
+        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_FOLLOWLOCATION => false,
+    ));
+    if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+        @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    }
+
+    $raw   = curl_exec($ch);
+    $errno = curl_errno($ch);
+    $err   = curl_error($ch);
+    $http  = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($errno) {
+        return array('ok' => false, 'error' => 'เชื่อมต่อ n8n ไม่ได้: ' . $err, 'raw' => '');
+    }
+    if ($http < 200 || $http >= 300) {
+        return array('ok' => false, 'error' => 'n8n ตอบกลับ HTTP ' . $http, 'raw' => (string) $raw);
+    }
+    return array('ok' => true, 'error' => '', 'raw' => (string) $raw);
+}
+
+/** ชื่อช่องทางที่ใช้แสดงในหน้าเว็บ */
+function cd_channel_label($channel)
+{
+    return $channel === 'fb' ? 'Facebook Messenger' : 'LINE';
+}

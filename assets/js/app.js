@@ -82,7 +82,7 @@
 
     // ถ้าหน้าตาเหมือนเดิมทุกอย่าง ไม่ต้องวาดใหม่ — กันจอกระพริบและกันตำแหน่ง scroll เด้ง
     var sig = items.map(function (c) {
-      return [c.id, c.unread, c.botEnabled ? 1 : 0, c.time, c.preview, c.name,
+      return [c.id, c.unread, c.botEnabled ? 1 : 0, c.time, c.preview, c.name, c.channel,
               c.id === currentId ? 1 : 0].join('|');
     }).join('~');
     if (sig === lastListSig) { return; }
@@ -95,6 +95,7 @@
         '<div class="body">' +
           '<div class="r1">' +
             '<b>' + esc(c.name) + '</b>' +
+            (c.channel === 'fb' ? '<span class="pill fb">FB</span>' : '<span class="pill line">LINE</span>') +
             (c.unread ? '<span class="badge">' + c.unread + '</span>' : '') +
             (c.botEnabled ? '' : '<span class="pill human">คนดูแล</span>') +
             '<span class="t">' + esc(c.time) + '</span>' +
@@ -160,7 +161,7 @@
     }
 
     var delBtn = (m.sender === 'bot' || m.sender === 'agent')
-      ? '<button type="button" class="msg-del" data-del="' + m.id + '" title="ลบข้อความ (เฉพาะหน้านี้ — LINE ไม่มี API ให้ลบข้อความที่ส่งไปแล้ว)">'
+      ? '<button type="button" class="msg-del" data-del="' + m.id + '" title="ลบข้อความ (เฉพาะหน้านี้ — ไม่มี API ให้ลบข้อความที่ส่งไปแล้ว)">'
         + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'
         + '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>'
         + '</button>'
@@ -203,7 +204,7 @@
     if (!btn || !currentId) { return; }
     var msgId = parseInt(btn.getAttribute('data-del'), 10);
     if (!msgId) { return; }
-    if (!confirm('ลบข้อความนี้?\n(เฉพาะหน้าจอแชทของ ChatDesk — ข้อความที่ลูกค้าเห็นใน LINE จะถูกลบไม่ได้ ป้องกันโดย LINE)')) { return; }
+    if (!confirm('ลบข้อความนี้?\n(เฉพาะหน้าจอแชทของ ChatDesk — ไม่มี API ให้ลบข้อความที่ส่งไปแล้วฝั่ง LINE/Facebook)')) { return; }
     postJson(cfg.api.action, { conversationId: currentId, action: 'delete_message', messageId: msgId })
       .then(function (res) {
         var d = res.data || {};
@@ -241,9 +242,12 @@
         var c = d.conversation;
         document.getElementById('convName').textContent = c.name;
         document.getElementById('convMeta').textContent =
-          'LINE • ' + c.userId + ' • เริ่มคุย ' + c.since + (c.status === 'closed' ? ' • ปิดเคสแล้ว' : '');
+          (c.channel === 'fb' ? 'Facebook Messenger' : 'LINE') + ' • ' + c.userId +
+          ' • เริ่มคุย ' + c.since + (c.status === 'closed' ? ' • ปิดเคสแล้ว' : '');
         document.getElementById('convAvatar').innerHTML =
           c.picture ? '<img src="' + esc(c.picture) + '" alt="">' : '👤';
+        // LINE มี sticker ในตัว ส่วน Facebook Messenger ยังไม่รองรับ — ซ่อนปุ่มสติกเกอร์
+        btnSticker.hidden = (c.channel === 'fb');
         btnClose.textContent = c.status === 'closed' ? 'เปิดเคสใหม่' : 'ปิดเคส';
         setBotState(c.botEnabled);
         appendMessages(d.messages);

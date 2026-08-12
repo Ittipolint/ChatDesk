@@ -2,9 +2,9 @@
 
 | รายการ | รายละเอียด |
 |---|---|
-| ชื่อระบบ | ChatDesk — กล่องข้อความ LINE สำหรับทีมดูแลลูกค้า |
+| ชื่อระบบ | ChatDesk — กล่องข้อความ LINE & Facebook Messenger สำหรับทีมดูแลลูกค้า |
 | เวอร์ชัน | 1.0.0 |
-| วันที่ | 9 สิงหาคม 2569 |
+| วันที่ | 12 สิงหาคม 2569 (เพิ่มช่องทาง Facebook Messenger) |
 | ประเภทเอกสาร | Software Requirement Specification (SRS) |
 | หมายเลขเอกสาร | CD-SRS-001 |
 
@@ -13,15 +13,16 @@
 ## 1. บทนำ (Introduction)
 
 ### 1.1 วัตถุประสงค์
-ChatDesk คือเว็บแอปพลิเคชันสำหรับทีมดูแลลูกค้า (Support Agent) ใช้ดูบทสนทนาระหว่าง **บอท LINE กับลูกค้า** และให้เจ้าหน้าที่**ตอบกลับลูกค้าทาง LINE ได้โดยตรง**จากหน้าจอเดียว โดยไม่ต้องเปิดแอป LINE เอง
+ChatDesk คือเว็บแอปพลิเคชันสำหรับทีมดูแลลูกค้า (Support Agent) ใช้ดูบทสนทนาระหว่าง **บอทกับลูกค้า** ทั้งช่องทาง **LINE** และ **Facebook Messenger** และให้เจ้าหน้าที่**ตอบกลับลูกค้าได้โดยตรง**จากหน้าจอเดียว โดยไม่ต้องเปิดแอป LINE / Facebook เอง
 
 ### 1.2 ขอบเขตของระบบ
 - รับข้อความจากลูกค้าทาง LINE (ผ่าน n8n ที่ต่อกับ LINE Messaging API)
-- รับข้อความที่บอท LINE ตอบกลับอัตโนมัติ (ผ่าน n8n)
-- แสดงรายการห้องแชท พร้อมจำนวนข้อความที่ยังไม่อ่าน
+- รับข้อความจากลูกค้าทาง Facebook Messenger (ผ่าน n8n ที่ต่อกับ Messenger Graph API)
+- รับข้อความที่บอทตอบกลับอัตโนมัติ (ผ่าน n8n)
+- แสดงรายการห้องแชท พร้อมจำนวนข้อความที่ยังไม่อ่าน และป้ายช่องทาง (LINE / FB)
 - เปิดดูบทสนทนาแบบเรียลไทม์ (poll ทุก 2-5 วินาที)
-- เจ้าหน้าที่พิมพ์ตอบกลับลูกค้า ทาง LINE จริง (ผ่าน n8n → LINE Push API)
-- ส่งภาพ / วิดีโอ / สติกเกอร์
+- เจ้าหน้าที่พิมพ์ตอบกลับลูกค้า ทาง LINE / Facebook จริง (ผ่าน n8n)
+- ส่งภาพ / วิดีโอ (ทั้งสองช่องทาง); ส่งสติกเกอร์เฉพาะช่องทาง LINE (FB ไม่มี sticker API — ซ่อนปุ่ม)
 - เปิด/ปิดบอทต่อห้อง, ปิด/เปิดเคส, ลบห้องแชท, ลบข้อความ (soft delete เฉพาะข้อความบอท/เจ้าหน้าที่)
 - จัดการมุมมอง: ฟิลเตอร์ทั้งหมด/ยังไม่อ่าน/คนดูแล/ปิดแล้ว + ค้นหา
 
@@ -37,7 +38,7 @@ ChatDesk คือเว็บแอปพลิเคชันสำหรั�
 | ภาษา/แพลตฟอร์ม | PHP 7.4+ (แนะนำ 8.x) พร้อม PDO_MySQL + cURL + fileinfo |
 | ฐานข้อมูล | MySQL 5.7+ / MariaDB 10.2+ (utf8mb4) |
 | เว็บเซิร์ฟเวอร์ | Apache (รองรับ .htaccess) หรือ nginx |
-| ฝั่งอัตโนมัติ | n8n (self-hosted) ต่อกับ LINE Messaging API |
+| ฝั่งอัตโนมัติ | n8n (self-hosted) ต่อกับ LINE Messaging API และ/หรือ Messenger Graph API |
 | เบราว์เซอร์ | Chrome / Edge / Safari / Firefox (ไม่รองรับ IE) |
 
 ---
@@ -45,12 +46,13 @@ ChatDesk คือเว็บแอปพลิเคชันสำหรั�
 ## 2. สถาปัตยกรรมระบบ (System Architecture)
 
 ```
- ลูกค้า (LINE app)
+ ลูกค้า (LINE app) / (Facebook Messenger)
       │  (1) ส่งข้อความ
       ▼
- LINE Messaging API ── webhook ──▶ n8n (Workflow: ChatDesk Manager — LINE)
-                                        │  (2) POST api/incoming.php
-                                        ▼
+ LINE Messaging API / Messenger Graph API ── webhook ──▶ n8n
+        (ChatDesk Manager — LINE / ChatDesk Manager — FB)
+                                         │  (2) POST api/incoming.php
+                                         ▼
                               ┌─────────────────────────┐
                               │   ChatDesk (PHP + MySQL) │
                               │  index.php / api/*.php   │
@@ -59,15 +61,16 @@ ChatDesk คือเว็บแอปพลิเคชันสำหรั�
                                          ▼
                               เจ้าหน้าที่ (Support Agent)
 
- การตอบกลับ:  agent → api/send.php → n8n (ChatDesk Manager — Push) → LINE Push API → ลูกค้า
+ การตอบกลับ:  agent → api/send.php → n8n (ChatDesk Manager — Push / Push FB)
+             → LINE Push API / Messenger Send API → ลูกค้า
 ```
 
 **หลักการไหลของข้อมูล (Data Flow):**
-1. ลูกค้าส่งข้อความใน LINE → LINE ส่ง webhook ไปยัง n8n
-2. n8n เรียก `POST api/incoming.php` ด้วย `sender=customer` → ระบบบันทึกข้อความ และตอบกลับ `botEnabled` ให้ n8n ใช้ตัดสินใจว่าบอทควรตอบหรือไม่
+1. ลูกค้าส่งข้อความใน LINE / Messenger → LINE / Facebook ส่ง webhook ไปยัง n8n (เรียกเวิร์กโฟลของช่องทางนั้น)
+2. n8n เรียก `POST api/incoming.php` ด้วย `sender=customer` (และ `channel=line|fb`) → ระบบบันทึกข้อความ และตอบกลับ `botEnabled` ให้ n8n ใช้ตัดสินใจว่าบอทควรตอบหรือไม่
 3. หลังบอทตอบเสร็จ n8n เรียก `api/incoming.php` อีกครั้งด้วย `sender=bot` → บันทึกคำตอบของบอท
-4. เจ้าหน้าที่เปิดหน้าเว็บ (login) → ดูรายการห้องแชทและข้อความ
-5. เจ้าหน้าที่พิมพ์ตอบ → `api/send.php` → เรียก n8n Push workflow → LINE ส่งข้อความให้ลูกค้า → บันทึกข้อความ `sender=agent` ลงฐานข้อมูล
+4. เจ้าหน้าที่เปิดหน้าเว็บ (login) → ดูรายการห้องแชทและข้อความ (แยกห้องตาม `channel`)
+5. เจ้าหน้าที่พิมพ์ตอบ → `api/send.php` → เรียก n8n Push workflow ที่ตรงกับช่องทางของห้อง → LINE/Messenger ส่งข้อความให้ลูกค้า → บันทึกข้อความ `sender=agent` ลงฐานข้อมูล
 
 ---
 
@@ -106,12 +109,12 @@ chatdesk/
 
 ## 4. ฐานข้อมูล (Database Design)
 
-### 4.1 ตาราง `cd_conversations` — ห้องแชท (1 แถว = 1 LINE user)
+### 4.1 ตาราง `cd_conversations` — ห้องแชท (1 แถว = 1 ผู้ใช้ต่อช่องทาง: LINE หรือ FB)
 | คอลัมน์ | ชนิด | คำอธิบาย |
 |---|---|---|
 | id | int unsigned AI PK | รหัสห้อง |
-| channel | varchar(20) | ช่องทาง (ค่าเริ่มต้น `line`) |
-| external_user_id | varchar(64) | LINE userId (`Uxxxx...`) — **unique ร่วมกับ channel** |
+| channel | varchar(20) | ช่องทาง: `line` หรือ `fb` (ค่าเริ่มต้น `line`) |
+| external_user_id | varchar(64) | LINE userId (`Uxxxx...`) หรือ Messenger PSID — **unique ร่วมกับ channel** |
 | display_name | varchar(150) | ชื่อที่แสดงของลูกค้า |
 | picture_url | varchar(255) | URL รูปโปรไฟล์ |
 | status | enum('open','closed') | สถานะเคส |
@@ -147,7 +150,8 @@ Indexes: `PRIMARY(id)`, `UNIQUE uk_external_msg(external_message_id)`, `KEY idx_
 
 ### 4.3 หมายเหตุการออกแบบ
 - **soft delete** ข้อความ: ใช้ `deleted_at` แทนการ `DELETE` เพื่อเก็บข้อมูลสำหรับ audit — thread จะไม่แสดงแถวที่ `deleted_at IS NOT NULL`
-- **กันข้อความซ้ำจาก LINE**: ใช้ `external_message_id` + UNIQUE key (LINE ส่ง webhook ซ้ำได้)
+- **กันข้อความซ้ำจาก LINE/FB**: ใช้ `external_message_id` + UNIQUE key (ระบบส่ง webhook ซ้ำได้)
+- **แยกช่องทาง**: `cd_conversations.channel` + `UNIQUE uk_channel_user(channel, external_user_id)` ทำให้ PSID/LINE userId เดียวกันใช้อักขระซ้ำกันได้โดยไม่ชนกัน และไม่มี impact ต่อ schema เดิม (ไม่มี ALTER TABLE ใหม่)
 - ใช้ `utf8mb4_unicode_ci` รองรับภาษาไทย/อิโมจิ
 
 ---
@@ -178,10 +182,11 @@ actions: `bot_on`, `bot_off`, `close`, `reopen`, `mark_read`, `delete_message` (
 ตอบกลับ: `{ ok, ... }`
 
 ### 5.5 `POST api/incoming.php` (จาก n8n — ตรวจ secret ถ้าตั้งค่า)
-Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUrl?, messageId?, messageType?, mediaUrl?, secret? }`
+Payload: `{ userId, text|message|reply|content, sender?, channel?, displayName?, pictureUrl?, messageId?, messageType?, mediaUrl?, mediaPreviewUrl?, secret? }`
 - sender: `customer` (default) หรือ `bot`
+- channel: `line` (default) หรือ `fb` — ใช้หาหรือสร้างห้องในช่องทางนั้น
 - พฤติกรรม: หา/สร้างห้อง → บันทึกข้อความ → ตอบ `{ ok, conversationId, messageId, duplicate, botEnabled, displayName }`
-- `duplicate=true` เมื่อ LINE ส่งข้อความซ้ำ (external_message_id ซ้ำ)
+- `duplicate=true` เมื่อระบบส่งข้อความซ้ำ (external_message_id ซ้ำ)
 
 ### 5.6 `POST api/upload.php`
 รองรับ 2 แบบ: multipart `file` (จากหน้าเว็บ) หรือ raw body + header `X-ChatDesk-Filename` (จาก n8n)
@@ -195,7 +200,7 @@ Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUr
 
 | ฟังก์ชัน | หน้าที่ |
 |---|---|
-| `cd_find_or_create_conversation($userId, $name, $pic)` | หาห้องตาม userId หรือสร้างใหม่ |
+| `cd_find_or_create_conversation($userId, $name, $pic, $channel)` | หาห้องตาม userId+channel หรือสร้างใหม่ |
 | `cd_save_message($convId, $sender, $content, $extra)` | บันทึกข้อความ + อัปเดต summary/unread; คืน id หรือ 0 ถ้าซ้ำ |
 | `cd_thread($convId, $limit, $sinceId)` | ดึงข้อความ (ไม่รวมที่ soft-delete) เรียงเก่า→ใหม่ |
 | `cd_format_message($row)` | จัดรูปให้ client (เพิ่ม html, ticks, time) |
@@ -203,6 +208,8 @@ Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUr
 | `cd_delete_message($messageId)` | soft delete (เฉพาะ bot/agent) + แก้ summary ห้อง |
 | `cd_mark_message_read($convId, $senderFilter)` | ตั้ง read_at |
 | `cd_push_line($userId, $text, $type, $media)` | ส่งข้อความออก LINE ผ่าน webhook n8n (cURL) |
+| `cd_push_fb($userId, $text, $type, $media)` | ส่งข้อความออก Facebook Messenger ผ่าน webhook n8n (cURL) |
+| `cd_channel_label($channel)` | ชื่อช่องทางที่ใช้แสดงในหน้าเว็บ (line/fb) |
 | `cd_json($data, $status)` | ตอบ JSON มาตรฐาน |
 | `cd_require_admin()` | ตรวจสิทธิ์ admin (401 ถ้าไม่อนุญาต) |
 | `cd_csrf_check($token)` | ตรวจ CSRF token |
@@ -229,7 +236,7 @@ Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUr
 - `✓✓` น้ำเงิน (indigo) — เปิดดูแล้ว (ในหน้าจอ ChatDesk)
 - `!` แดง — ส่งไม่สำเร็จ
 
-> **หมายเหตุสำคัญ**: LINE Messaging API **ไม่มี** read-receipt webhook สำหรับข้อความที่บอท/เจ้าหน้าที่ส่งออกไป และ **ไม่มี** API ให้ลบ/ถอนข้อความที่ส่งไปแล้ว ตัวบ่งชี้ "อ่านแล้ว" จึงหมายถึง "เปิดดูในหน้าจอ ChatDesk" เท่านั้น และการลบข้อความเป็นการ soft-delete ในระบบ (ลูกค้ายังเห็นข้อความใน LINE)
+> **หมายเหตุสำคัญ**: LINE Messaging API **ไม่มี** read-receipt webhook สำหรับข้อความที่บอท/เจ้าหน้าที่ส่งออกไป และ **ไม่มี** API ให้ลบ/ถอนข้อความที่ส่งไปแล้ว (Facebook Messenger ก็ไม่มี API ลบข้อความส่งไปแล้วเช่นกัน) ตัวบ่งชี้ "อ่านแล้ว" จึงหมายถึง "เปิดดูในหน้าจอ ChatDesk" เท่านั้น และการลบข้อความเป็นการ soft-delete ในระบบ (ลูกค้ายังเห็นข้อความใน LINE/FB)
 
 ---
 
@@ -244,7 +251,7 @@ Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUr
 7. **ไฟล์อัปโหลด**: ตรวจ extension + MIME (`finfo`), สุ่มชื่อไฟล์, ห้ามรัน PHP ใน `uploads/` (`.htaccess`), จำกัดขนาด 50 MB
 8. **การเปิดเผยไฟล์**: `.htaccess` ระดับ root ปิด access ไฟล์ `config.php`, `schema.sql`; โฟลเดอร์ `inc/` กันเข้าโดยตรง
 9. **n8n secret**: `incoming.php`/`upload.php` ตรวจ secret ถ้าตั้งค่าไว้ (เพื่อให้เฉพาะ n8n ที่รู้รหัสเรียกได้)
-10. **SSRF**: `cd_push_line` จำกัดเฉพาะ http/https และไม่ให้ redirect (`FOLLOWLOCATION=false`)
+10. **SSRF**: `cd_push_line` / `cd_push_fb` จำกัดเฉพาะ http/https และไม่ให้ redirect (`FOLLOWLOCATION=false`)
 11. **header ความปลอดภัย**: `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`
 
 ---
@@ -264,7 +271,8 @@ Payload: `{ userId, text|message|reply|content, sender?, displayName?, pictureUr
 ## 10. สมมติฐานและข้อจำกัด (Assumptions & Constraints)
 
 1. LINE Messaging API ไม่แจ้ง read receipt ให้บอทสำหรับแชท 1:1 → สถานะอ่านเป็น "เปิดดูใน ChatDesk" เท่านั้น
-2. LINE ไม่มี API ให้ลบ/ถอนข้อความที่ส่งไปแล้ว → การลบข้อความเป็น soft delete ในระบบเท่านั้น
-3. ระบบพึ่งพา n8n ในการรับ webhook และ Push ไป LINE (channel access token เก็บใน n8n ไม่ใช่บน hosting)
+2. LINE ไม่มี API ให้ลบ/ถอนข้อความที่ส่งไปแล้ว → การลบข้อความเป็น soft delete ในระบบเท่านั้น (FB ก็เช่นกัน)
+3. ระบบพึ่งพา n8n ในการรับ webhook และ Push ไป LINE/FB (channel access token / page access token เก็บใน n8n ไม่ใช่บน hosting)
 4. รองรับการสนทนาแบบ 1:1 (ไม่ใช่กลุ่ม/ห้อง)
-5. การแจ้งเตือนแบบ push/poll ใช้ polling (ไม่ใช่ WebSocket) เหมาะกับผู้ใช้หลักจำนวนน้อย
+5. Facebook Messenger ไม่มี sticker API แบบ LINE → ปุ่มสติกเกอร์ถูกซ่อนในห้องช่องทาง `fb`
+6. การแจ้งเตือนแบบ push/poll ใช้ polling (ไม่ใช่ WebSocket) เหมาะกับผู้ใช้หลักจำนวนน้อย

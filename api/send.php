@@ -5,7 +5,7 @@
  *
  * type = text | image | video | sticker (ไม่ระบุ = text)
  *
- * บันทึกข้อความ → ยิงออกไปทาง n8n → LINE
+ * บันทึกข้อความ → ยิงออกไปทาง n8n → LINE / Facebook Messenger (ตาม channel ของห้อง)
  * ถ้าตั้ง auto_mute_bot ไว้ จะปิดบอทของห้องนี้ให้อัตโนมัติ เพื่อไม่ให้บอทตอบแทรก
  */
 
@@ -78,8 +78,12 @@ if (!empty($CFG['app']['auto_mute_bot']) && (int) $conv['bot_enabled'] === 1) {
     $muted = true;
 }
 
-/* ส่งออกไปยัง LINE ผ่าน n8n */
-$res = cd_push_line($conv['external_user_id'], $text, $type, $media);
+/* ส่งออกไปยังปลายทางตามช่องทาง (LINE / Facebook Messenger) ผ่าน n8n */
+if ($conv['channel'] === 'fb') {
+    $res = cd_push_fb($conv['external_user_id'], $text, $type, $media);
+} else {
+    $res = cd_push_line($conv['external_user_id'], $text, $type, $media);
+}
 
 $messageId = cd_save_message($convId, 'agent', $text !== '' ? $text : '[' . $type . ']', array(
     'type'    => $type,

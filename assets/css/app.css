@@ -85,6 +85,8 @@ a{color:var(--indigo-dark);text-decoration:none}
 .pill{font-size:10.5px;padding:1px 7px;border-radius:99px;flex:0 0 auto}
 .pill.human{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
 .pill.bot{background:var(--indigo-soft);color:var(--indigo-dark);border:1px solid #c7d2fe}
+.pill.fb{background:#e7f3ff;color:#1c4fd8;border:1px solid #bfdcff}
+.pill.line{background:#f2f4f7;color:#475569;border:1px solid #d0d7e2}
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
 
 /* ---------------------------------- แชท ----------------------------------- */
